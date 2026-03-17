@@ -43,9 +43,9 @@ Chrome extensions cannot launch other profiles directly. Profilissimo bridges th
 
 ```
 ┌─────────────────────┐         ┌──────────────────────┐         ┌───────────────────────────┐
-│   Chrome Extension   │  stdio  │     NMH Binary        │  spawn  │        Chrome              │
-│                     │────────▶│                        │────────▶│  --profile-directory=...   │
-│  (sends JSON msg)   │         │  (validates & routes)  │         │  --new-window <url>        │
+│   Chrome Extension  │  stdio  │     NMH Binary       │  spawn  │        Chrome             │
+│                     │────────▶│                      │────────▶│  --profile-directory=...  │
+│  (sends JSON msg)   │         │ (validates & routes) │         │  --new-window <url>       │
 └─────────────────────┘         └──────────────────────┘         └───────────────────────────┘
 ```
 
