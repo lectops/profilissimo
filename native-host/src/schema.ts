@@ -106,6 +106,9 @@ export function validateRequest(data: unknown): { valid: true; request: NMHReque
     if (obj.defaultProfile !== undefined && obj.defaultProfile !== null && typeof obj.defaultProfile !== "string") {
       return { valid: false, error: "set_config: 'defaultProfile' must be a string or null" };
     }
+    if (typeof obj.defaultProfile === "string" && !isValidProfileDirectory(obj.defaultProfile)) {
+      return { valid: false, error: "set_config: 'defaultProfile' contains invalid characters" };
+    }
     if (obj.closeSourceTab !== undefined && typeof obj.closeSourceTab !== "boolean") {
       return { valid: false, error: "set_config: 'closeSourceTab' must be a boolean" };
     }
