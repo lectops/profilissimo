@@ -23,7 +23,8 @@ Profilissimo adds a popup menu, right-click context menus, and a keyboard shortc
 - Right-click any page or link to open it in a specific profile
 - Keyboard shortcut (`Alt+Shift+P`) for instant transfer to your default profile
 - Optionally auto-close the source tab after transfer
-- Works on macOS, Linux, and Windows
+
+> **Platform support:** macOS only for now. Linux and Windows support is planned.
 
 ## How it works
 
@@ -51,16 +52,14 @@ The NMH is a standalone binary that Chrome launches when the extension needs it.
 
 #### Option A: Download the pre-built binary
 
-Download the binary for your platform from the [latest release](https://github.com/lectops/profilissimo/releases/latest):
+Download the binary for your Mac from the [latest release](https://github.com/lectops/profilissimo/releases/latest):
 
 | Platform | Binary |
 |----------|--------|
 | macOS (Apple Silicon) | `profilissimo-nmh-darwin-arm64` |
 | macOS (Intel) | `profilissimo-nmh-darwin-x64` |
-| Linux (x64) | `profilissimo-nmh-linux-x64` |
-| Windows (x64) | `profilissimo-nmh-windows-x64.exe` |
 
-Then register it with Chrome (see [Manual NMH registration](#manual-nmh-registration) below).
+Then register it with Chrome (see Step 3 below).
 
 #### Option B: Build from source
 
@@ -69,8 +68,6 @@ See [Building from source](#building-from-source) below.
 ### Step 3: Register the NMH with Chrome
 
 Chrome needs a JSON manifest file that tells it where the NMH binary is and which extensions are allowed to use it.
-
-#### macOS
 
 ```bash
 mkdir -p "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts"
@@ -88,51 +85,11 @@ cat > "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.
 EOF
 ```
 
-#### Linux
-
-```bash
-mkdir -p "$HOME/.config/google-chrome/NativeMessagingHosts"
-
-cat > "$HOME/.config/google-chrome/NativeMessagingHosts/com.profilissimo.nmh.json" << EOF
-{
-  "name": "com.profilissimo.nmh",
-  "description": "Profilissimo Native Messaging Host",
-  "path": "/absolute/path/to/profilissimo-nmh",
-  "type": "stdio",
-  "allowed_origins": [
-    "chrome-extension://YOUR_EXTENSION_ID/"
-  ]
-}
-EOF
-```
-
-#### Windows (PowerShell)
-
-```powershell
-$ManifestDir = "$env:LOCALAPPDATA\Google\Chrome\User Data\NativeMessagingHosts"
-New-Item -ItemType Directory -Force -Path $ManifestDir | Out-Null
-
-$Manifest = @{
-    name = "com.profilissimo.nmh"
-    description = "Profilissimo Native Messaging Host"
-    path = "C:\absolute\path\to\profilissimo-nmh.exe"
-    type = "stdio"
-    allowed_origins = @("chrome-extension://YOUR_EXTENSION_ID/")
-} | ConvertTo-Json -Depth 3
-
-Set-Content -Path "$ManifestDir\com.profilissimo.nmh.json" -Value $Manifest -Encoding UTF8
-
-# Windows also requires a registry key
-$RegPath = "HKCU:\Software\Google\Chrome\NativeMessagingHosts\com.profilissimo.nmh"
-New-Item -Path $RegPath -Force | Out-Null
-Set-ItemProperty -Path $RegPath -Name "(Default)" -Value "$ManifestDir\com.profilissimo.nmh.json"
-```
-
 > **Important:** Replace `/absolute/path/to/profilissimo-nmh` with the actual path to the binary, and `YOUR_EXTENSION_ID` with the extension ID from Step 1.
 
 ### Step 4: Restart Chrome
 
-Quit Chrome completely (`Cmd+Q` on macOS, `Ctrl+Q` on Linux, or exit from the system tray on Windows) and reopen it. Chrome only detects new native messaging hosts on startup.
+Quit Chrome completely (`Cmd+Q`) and reopen it. Chrome only detects new native messaging hosts on startup.
 
 ### Step 5: Verify
 
@@ -192,20 +149,6 @@ npm run build:binary -w native-host
 
 Output is `native-host/bin/profilissimo-nmh`.
 
-To cross-compile for all platforms:
-
-```bash
-npm run build:binary:all -w native-host
-```
-
-Outputs:
-```
-native-host/bin/profilissimo-nmh-darwin-arm64
-native-host/bin/profilissimo-nmh-darwin-x64
-native-host/bin/profilissimo-nmh-linux-x64
-native-host/bin/profilissimo-nmh-windows-x64.exe
-```
-
 ### Development
 
 ```bash
@@ -241,9 +184,8 @@ profilissimo/
 │   │   ├── profiles.ts        # Chrome profile discovery
 │   │   └── launcher.ts        # Chrome process spawning
 │   └── bin/                   # Compiled binaries (gitignored)
-├── installer/                 # One-line install scripts
-│   ├── install.sh             # macOS / Linux
-│   └── install.ps1            # Windows
+├── installer/                 # Install scripts
+│   └── install.sh             # macOS
 └── .github/workflows/         # CI/CD (release on tag push)
 ```
 
