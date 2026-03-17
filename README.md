@@ -57,7 +57,6 @@ Download the binary for your Mac from the [latest release](https://github.com/le
 | Platform | Binary |
 |----------|--------|
 | macOS (Apple Silicon) | `profilissimo-nmh-darwin-arm64` |
-| macOS (Intel) | `profilissimo-nmh-darwin-x64` |
 
 Then register it with Chrome (see Step 3 below).
 
