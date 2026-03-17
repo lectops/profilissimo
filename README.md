@@ -8,14 +8,6 @@
   Open the current tab or any link in a different Chrome profile — with one click.
 </p>
 
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="extension/public/icons/profilissimo-logo-light.png">
-    <source media="(prefers-color-scheme: light)" srcset="extension/public/icons/profilissimo-logo.png">
-    <img src="extension/public/icons/profilissimo-logo.png" alt="profilissimo" height="28">
-  </picture>
-</p>
-
 ---
 
 ## The problem
