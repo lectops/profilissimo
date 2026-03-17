@@ -9,7 +9,11 @@ const shortcutLabel = $("shortcut-label") as HTMLElement;
 const shortcutLink = $("shortcut-link") as HTMLAnchorElement;
 const nmhIndicator = $("nmh-indicator") as HTMLSpanElement;
 const nmhText = $("nmh-text") as HTMLSpanElement;
+const nmhAction = $("nmh-action") as HTMLDivElement;
 const saveStatusEl = $("save-status") as HTMLDivElement;
+
+const INSTALL_COMMAND = `curl -fsSL https://raw.githubusercontent.com/lectops/profilissimo/main/installer/install.sh | bash`;
+const UNINSTALL_COMMAND = `rm -rf ~/.profilissimo && rm "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.profilissimo.nmh.json"`;
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -26,6 +30,48 @@ async function savePreferences(): Promise<void> {
     showNotifications: showNotifications.checked,
   });
   showSaved();
+}
+
+function createCopyButton(label: string, command: string): HTMLButtonElement {
+  const btn = document.createElement("button");
+  btn.className = "helper-action-btn";
+  btn.textContent = label;
+  btn.addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(command);
+      btn.textContent = "Copied!";
+      setTimeout(() => {
+        btn.textContent = label;
+      }, 1500);
+    } catch {
+      // clipboard not available
+    }
+  });
+  return btn;
+}
+
+function renderNmhAction(connected: boolean): void {
+  nmhAction.replaceChildren();
+
+  if (connected) {
+    const btn = createCopyButton("Copy uninstall command", UNINSTALL_COMMAND);
+    const hint = document.createElement("p");
+    hint.className = "description";
+    hint.style.marginTop = "6px";
+    hint.style.marginBottom = "0";
+    hint.textContent = "Paste in Terminal to remove the helper app.";
+    nmhAction.appendChild(btn);
+    nmhAction.appendChild(hint);
+  } else {
+    const btn = createCopyButton("Copy install command", INSTALL_COMMAND);
+    const hint = document.createElement("p");
+    hint.className = "description";
+    hint.style.marginTop = "6px";
+    hint.style.marginBottom = "0";
+    hint.textContent = "Paste in Terminal, then restart Chrome.";
+    nmhAction.appendChild(btn);
+    nmhAction.appendChild(hint);
+  }
 }
 
 async function init(): Promise<void> {
@@ -88,7 +134,8 @@ async function init(): Promise<void> {
   nmhIndicator.className = `indicator ${connected ? "connected" : "disconnected"}`;
   nmhText.textContent = connected
     ? "Connected"
-    : "Not connected \u2014 run the installer script";
+    : "Not connected";
+  renderNmhAction(connected);
 }
 
 // Open chrome://extensions/shortcuts

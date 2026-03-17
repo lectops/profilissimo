@@ -104,11 +104,60 @@ body {
   white-space: nowrap;
 }
 
+.profile-item.current {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.profile-item.current:hover {
+  background: transparent;
+}
+
+.current-badge {
+  font-size: 10px;
+  color: #5f6368;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
 .setup-prompt {
   text-align: center;
   padding: 16px 8px;
   color: #5f6368;
   line-height: 1.5;
+}
+
+.setup-desc {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.copy-install-btn {
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.copy-install-btn:hover {
+  background: #1765cc;
+}
+
+.copy-install-btn:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
+}
+
+.setup-detail {
+  margin-top: 8px;
+  font-size: 11px;
 }
 
 .loading {

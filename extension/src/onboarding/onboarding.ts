@@ -7,44 +7,6 @@ const statusEl = $("status");
 const statusDot = $("status-dot");
 const statusText = $("status-text");
 const doneBtn = $("done-btn") as HTMLButtonElement;
-const quitShortcut = $("quit-shortcut");
-
-// --- OS detection and tab switching ---
-
-function detectOS(): "macos" | "linux" | "windows" {
-  const ua = navigator.userAgent;
-  if (ua.includes("Mac")) return "macos";
-  if (ua.includes("Win")) return "windows";
-  return "linux";
-}
-
-function showOS(os: string): void {
-  // Toggle tabs
-  document.querySelectorAll(".os-tab").forEach((tab) => {
-    tab.classList.toggle("active", tab.getAttribute("data-os") === os);
-  });
-  // Toggle command blocks
-  document.querySelectorAll(".install-cmd").forEach((cmd) => {
-    cmd.classList.toggle("hidden", cmd.id !== `cmd-${os}`);
-  });
-  // Update quit shortcut text
-  if (os === "macos") {
-    quitShortcut.textContent = "Cmd+Q";
-  } else {
-    quitShortcut.textContent = "Ctrl+Q";
-  }
-}
-
-// Init OS tabs
-const detectedOS = detectOS();
-showOS(detectedOS);
-
-document.querySelectorAll(".os-tab").forEach((tab) => {
-  tab.addEventListener("click", () => {
-    const os = tab.getAttribute("data-os");
-    if (os) showOS(os);
-  });
-});
 
 // --- Copy buttons ---
 

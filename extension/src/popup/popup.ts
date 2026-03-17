@@ -9,6 +9,9 @@ const statusEl = $("status") as HTMLDivElement;
 const settingsBtn = $("settings-btn") as HTMLButtonElement;
 const refreshBtn = $("refresh-btn") as HTMLButtonElement;
 const setupLink = $("setup-link") as HTMLAnchorElement;
+const copyInstallBtn = $("copy-install-btn") as HTMLButtonElement;
+
+const INSTALL_COMMAND = `curl -fsSL https://raw.githubusercontent.com/lectops/profilissimo/main/installer/install.sh | bash`;
 
 const PROFILE_COLORS = [
   "#1a73e8", "#e8710a", "#d93025", "#188038",
@@ -29,14 +32,26 @@ function showStatus(message: string, type: "success" | "error"): void {
   statusTimeout = setTimeout(() => statusEl.classList.add("hidden"), 2500);
 }
 
-function renderProfiles(profiles: ProfileInfo[]): void {
+function renderProfiles(profiles: ProfileInfo[], currentEmail?: string | null): void {
   profileList.replaceChildren();
 
   profiles.forEach((profile, index) => {
+    const isCurrent = !!(currentEmail && profile.email === currentEmail);
+
     const li = document.createElement("li");
-    li.className = "profile-item";
-    li.setAttribute("role", "button");
-    li.tabIndex = 0;
+    li.className = isCurrent ? "profile-item current" : "profile-item";
+
+    if (!isCurrent) {
+      li.setAttribute("role", "button");
+      li.tabIndex = 0;
+      li.addEventListener("click", () => void transferToProfile(profile));
+      li.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          void transferToProfile(profile);
+        }
+      });
+    }
 
     const colorDot = document.createElement("div");
     colorDot.className = "profile-color";
@@ -50,13 +65,14 @@ function renderProfiles(profiles: ProfileInfo[]): void {
 
     li.appendChild(colorDot);
     li.appendChild(name);
-    li.addEventListener("click", () => void transferToProfile(profile));
-    li.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        void transferToProfile(profile);
-      }
-    });
+
+    if (isCurrent) {
+      const badge = document.createElement("span");
+      badge.className = "current-badge";
+      badge.textContent = "current";
+      li.appendChild(badge);
+    }
+
     profileList.appendChild(li);
   });
 }
@@ -114,7 +130,14 @@ async function loadProfiles(forceRefresh = false): Promise<void> {
     loading.classList.add("hidden");
 
     if (response?.success && response.profiles) {
-      renderProfiles(response.profiles);
+      let currentEmail: string | null = null;
+      try {
+        const info = await chrome.identity.getProfileUserInfo({ accountStatus: "ANY" as chrome.identity.AccountStatus });
+        currentEmail = info.email || null;
+      } catch {
+        // identity API not available
+      }
+      renderProfiles(response.profiles, currentEmail);
     } else {
       showStatus(response?.error ?? "Failed to load profiles", "error");
     }
@@ -126,6 +149,19 @@ async function loadProfiles(forceRefresh = false): Promise<void> {
 
 settingsBtn.addEventListener("click", () => {
   chrome.runtime.openOptionsPage();
+});
+
+copyInstallBtn.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(INSTALL_COMMAND);
+    copyInstallBtn.textContent = "Copied!";
+    setTimeout(() => {
+      copyInstallBtn.textContent = "Copy install command";
+    }, 1500);
+  } catch {
+    // Fallback: open onboarding page
+    chrome.tabs.create({ url: chrome.runtime.getURL("src/onboarding/onboarding.html") });
+  }
 });
 
 setupLink.addEventListener("click", (e) => {
