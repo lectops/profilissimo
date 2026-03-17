@@ -4,6 +4,7 @@ import { homedir } from "node:os";
 
 export interface AppConfig {
   defaultProfile: string | null;
+  closeSourceTab: boolean;
 }
 
 const CONFIG_DIR = join(homedir(), ".profilissimo");
@@ -11,6 +12,7 @@ const CONFIG_PATH = join(CONFIG_DIR, "config.json");
 
 const DEFAULT_CONFIG: AppConfig = {
   defaultProfile: null,
+  closeSourceTab: false,
 };
 
 export async function readConfig(): Promise<AppConfig> {
@@ -20,13 +22,17 @@ export async function readConfig(): Promise<AppConfig> {
     return {
       defaultProfile:
         typeof parsed.defaultProfile === "string" ? parsed.defaultProfile : null,
+      closeSourceTab:
+        typeof parsed.closeSourceTab === "boolean" ? parsed.closeSourceTab : false,
     };
   } catch {
     return { ...DEFAULT_CONFIG };
   }
 }
 
-export async function writeConfig(config: AppConfig): Promise<void> {
+export async function writeConfig(config: Partial<AppConfig>): Promise<void> {
+  const current = await readConfig();
+  const merged = { ...current, ...config };
   await mkdir(CONFIG_DIR, { recursive: true });
-  await writeFile(CONFIG_PATH, JSON.stringify(config, null, 2) + "\n", "utf-8");
+  await writeFile(CONFIG_PATH, JSON.stringify(merged, null, 2) + "\n", "utf-8");
 }

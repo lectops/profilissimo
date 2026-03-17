@@ -18,7 +18,8 @@ interface GetConfigRequest {
 
 interface SetConfigRequest {
   action: "set_config";
-  defaultProfile: string | null;
+  defaultProfile?: string | null;
+  closeSourceTab?: boolean;
 }
 
 export type NMHRequest = OpenUrlRequest | ListProfilesRequest | HealthCheckRequest | GetConfigRequest | SetConfigRequest;
@@ -34,5 +35,5 @@ export interface NMHResponse {
   success: boolean;
   error?: string;
   profiles?: ProfileInfo[];
-  config?: { defaultProfile: string | null };
+  config?: { defaultProfile: string | null; closeSourceTab: boolean };
 }

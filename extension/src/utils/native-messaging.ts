@@ -68,11 +68,11 @@ export async function openUrlInProfile(url: string, targetProfile: string): Prom
   return sendNativeMessage({ action: "open_url", url, targetProfile });
 }
 
-export async function getConfig(): Promise<{ defaultProfile: string | null }> {
+export async function getConfig(): Promise<{ defaultProfile: string | null; closeSourceTab: boolean }> {
   const response = await sendNativeMessage({ action: "get_config" });
-  return response.config ?? { defaultProfile: null };
+  return response.config ?? { defaultProfile: null, closeSourceTab: false };
 }
 
-export async function setConfig(defaultProfile: string | null): Promise<void> {
-  await sendNativeMessage({ action: "set_config", defaultProfile });
+export async function setConfig(updates: { defaultProfile?: string | null; closeSourceTab?: boolean }): Promise<void> {
+  await sendNativeMessage({ action: "set_config", ...updates });
 }

@@ -143,7 +143,10 @@ async function handleMessage(raw: Buffer): Promise<NMHResponse> {
 
     case "set_config":
       try {
-        await writeConfig({ defaultProfile: request.defaultProfile });
+        const updates: Record<string, unknown> = {};
+        if (request.defaultProfile !== undefined) updates.defaultProfile = request.defaultProfile;
+        if (request.closeSourceTab !== undefined) updates.closeSourceTab = request.closeSourceTab;
+        await writeConfig(updates);
         return { success: true };
       } catch (err) {
         return { success: false, error: errorMessage(err) };

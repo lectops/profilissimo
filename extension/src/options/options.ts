@@ -1,6 +1,5 @@
 import { $ } from "../utils/dom.js";
 import { profileLabel } from "../utils/format.js";
-import { getPreferences, setPreferences } from "../utils/storage.js";
 import { INSTALL_COMMAND, UNINSTALL_COMMAND } from "../utils/constants.js";
 
 const defaultProfileSelect = $("default-profile") as HTMLSelectElement;
@@ -20,22 +19,12 @@ function showSaved(): void {
   saveTimeout = setTimeout(() => saveStatusEl.classList.add("hidden"), 1500);
 }
 
-async function savePreferences(): Promise<void> {
-  await setPreferences({
-    closeSourceTab: closeSourceTab.checked,
-  });
-  showSaved();
-}
-
-async function saveDefaultProfile(): Promise<void> {
+async function saveConfig(updates: { defaultProfile?: string | null; closeSourceTab?: boolean }): Promise<void> {
   try {
-    await chrome.runtime.sendMessage({
-      type: "set_config",
-      defaultProfile: defaultProfileSelect.value || null,
-    });
+    await chrome.runtime.sendMessage({ type: "set_config", ...updates });
     showSaved();
   } catch {
-    console.warn("Profilissimo: failed to save default profile");
+    console.warn("Profilissimo: failed to save config");
   }
 }
 
@@ -82,10 +71,6 @@ function renderNmhAction(connected: boolean): void {
 }
 
 async function init(): Promise<void> {
-  // Load per-profile preferences
-  const prefs = await getPreferences();
-  closeSourceTab.checked = prefs.closeSourceTab;
-
   // Load profiles for the default profile dropdown
   try {
     const response = await chrome.runtime.sendMessage({
@@ -106,15 +91,18 @@ async function init(): Promise<void> {
     console.warn("Profilissimo: failed to load profiles", err);
   }
 
-  // Load shared default profile from NMH config
+  // Load shared config from NMH
   try {
     const configResponse = await chrome.runtime.sendMessage({ type: "get_config" });
-    if (configResponse?.success && configResponse.config?.defaultProfile) {
-      defaultProfileSelect.value = configResponse.config.defaultProfile;
-      // Clear if profile no longer exists in the dropdown
-      if (defaultProfileSelect.value !== configResponse.config.defaultProfile) {
-        await chrome.runtime.sendMessage({ type: "set_config", defaultProfile: null });
+    if (configResponse?.success && configResponse.config) {
+      if (configResponse.config.defaultProfile) {
+        defaultProfileSelect.value = configResponse.config.defaultProfile;
+        // Clear if profile no longer exists in the dropdown
+        if (defaultProfileSelect.value !== configResponse.config.defaultProfile) {
+          await chrome.runtime.sendMessage({ type: "set_config", defaultProfile: null });
+        }
       }
+      closeSourceTab.checked = configResponse.config.closeSourceTab ?? false;
     }
   } catch {
     // NMH config not available
@@ -155,7 +143,7 @@ shortcutLink.addEventListener("click", (e) => {
 });
 
 // Auto-save on change
-defaultProfileSelect.addEventListener("change", () => void saveDefaultProfile());
-closeSourceTab.addEventListener("change", () => void savePreferences());
+defaultProfileSelect.addEventListener("change", () => void saveConfig({ defaultProfile: defaultProfileSelect.value || null }));
+closeSourceTab.addEventListener("change", () => void saveConfig({ closeSourceTab: closeSourceTab.checked }));
 
 void init();

@@ -3,7 +3,7 @@ import { profileLabel, errorMessage } from "../utils/format.js";
 import { healthCheck, openUrlInProfile, getConfig, setConfig } from "../utils/native-messaging.js";
 import { isTransferableUrl } from "../utils/url.js";
 import { getProfiles, clearProfileCache } from "../utils/profiles.js";
-import { getPreferences, getLastUsedProfile, setLastUsedProfile } from "../utils/storage.js";
+import { getLastUsedProfile, setLastUsedProfile } from "../utils/storage.js";
 
 self.addEventListener("unhandledrejection", (event) => {
   console.error("Profilissimo: unhandled rejection", event.reason);
@@ -126,9 +126,13 @@ async function handleTransfer(url: string, targetProfile: string, sourceTabId?: 
     const response = await openUrlInProfile(url, targetProfile);
     if (response.success) {
       await setLastUsedProfile(targetProfile);
-      const prefs = await getPreferences();
-      if (prefs.closeSourceTab && sourceTabId !== undefined) {
-        await safeCloseTab(sourceTabId);
+      try {
+        const config = await getConfig();
+        if (config.closeSourceTab && sourceTabId !== undefined) {
+          await safeCloseTab(sourceTabId);
+        }
+      } catch {
+        // Config not available — don't close tab
       }
     }
     return response;
@@ -250,7 +254,8 @@ interface GetConfigMessage {
 
 interface SetConfigMessage {
   type: "set_config";
-  defaultProfile: string | null;
+  defaultProfile?: string | null;
+  closeSourceTab?: boolean;
 }
 
 type ExtensionMessage = TransferMessage | GetProfilesMessage | HealthCheckMessage | RefreshMenusMessage | GetConfigMessage | SetConfigMessage;
@@ -266,7 +271,8 @@ function isValidMessage(message: unknown): message is ExtensionMessage {
     case "get_profiles":
       return msg.forceRefresh === undefined || typeof msg.forceRefresh === "boolean";
     case "set_config":
-      return msg.defaultProfile === null || typeof msg.defaultProfile === "string";
+      return (msg.defaultProfile === undefined || msg.defaultProfile === null || typeof msg.defaultProfile === "string") &&
+        (msg.closeSourceTab === undefined || typeof msg.closeSourceTab === "boolean");
     case "health_check":
     case "refresh_menus":
     case "get_config":
@@ -313,7 +319,7 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
       return true;
 
     case "set_config":
-      setConfig(message.defaultProfile)
+      setConfig(message)
         .then(() => sendResponse({ success: true }))
         .catch(() => sendResponse({ success: false, error: "Failed to save config" }));
       return true;

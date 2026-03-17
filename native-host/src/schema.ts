@@ -25,7 +25,8 @@ export interface GetConfigRequest {
 
 export interface SetConfigRequest {
   action: "set_config";
-  defaultProfile: string | null;
+  defaultProfile?: string | null;
+  closeSourceTab?: boolean;
 }
 
 export type NMHRequest = OpenUrlRequest | ListProfilesRequest | HealthCheckRequest | GetConfigRequest | SetConfigRequest;
@@ -99,16 +100,20 @@ export function validateRequest(data: unknown): { valid: true; request: NMHReque
   }
 
   if (action === "set_config") {
-    if (obj.defaultProfile !== null && typeof obj.defaultProfile !== "string") {
-      return { valid: false, error: "set_config requires 'defaultProfile' to be a string or null" };
+    if (obj.defaultProfile !== undefined && obj.defaultProfile !== null && typeof obj.defaultProfile !== "string") {
+      return { valid: false, error: "set_config: 'defaultProfile' must be a string or null" };
     }
-    return {
-      valid: true,
-      request: {
-        action: "set_config",
-        defaultProfile: typeof obj.defaultProfile === "string" ? obj.defaultProfile : null,
-      },
-    };
+    if (obj.closeSourceTab !== undefined && typeof obj.closeSourceTab !== "boolean") {
+      return { valid: false, error: "set_config: 'closeSourceTab' must be a boolean" };
+    }
+    const request: SetConfigRequest = { action: "set_config" };
+    if (obj.defaultProfile !== undefined) {
+      request.defaultProfile = typeof obj.defaultProfile === "string" ? obj.defaultProfile : null;
+    }
+    if (typeof obj.closeSourceTab === "boolean") {
+      request.closeSourceTab = obj.closeSourceTab;
+    }
+    return { valid: true, request };
   }
 
   return { valid: true, request: { action: "health_check" } };
