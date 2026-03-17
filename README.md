@@ -9,7 +9,11 @@
 </p>
 
 <p align="center">
-  <img src="extension/public/icons/profilissimo-logo.png" alt="profilissimo" height="28">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="extension/public/icons/profilissimo-logo-light.png">
+    <source media="(prefers-color-scheme: light)" srcset="extension/public/icons/profilissimo-logo.png">
+    <img src="extension/public/icons/profilissimo-logo.png" alt="profilissimo" height="28">
+  </picture>
 </p>
 
 ---
