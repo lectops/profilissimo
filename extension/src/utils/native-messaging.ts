@@ -51,12 +51,12 @@ function sendNativeMessage(request: NMHRequest): Promise<NMHResponse> {
   });
 }
 
-export async function healthCheck(): Promise<boolean> {
+export async function healthCheck(): Promise<{ connected: boolean; version?: string }> {
   try {
     const response = await sendNativeMessage({ action: "health_check" });
-    return response.success;
+    return { connected: response.success, version: response.version };
   } catch {
-    return false;
+    return { connected: false };
   }
 }
 

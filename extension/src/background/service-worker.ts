@@ -157,8 +157,8 @@ async function handleGetProfiles(forceRefresh?: boolean): Promise<ProfilesResult
 // and context menus need their Chrome API state rebuilt on every restart.
 void (async () => {
   try {
-    const connected = await healthCheck();
-    if (connected) {
+    const health = await healthCheck();
+    if (health.connected) {
       await buildContextMenus();
     }
   } catch (err) {
@@ -301,7 +301,7 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
 
     case "health_check":
       healthCheck()
-        .then((connected) => sendResponse({ connected }))
+        .then((result) => sendResponse(result))
         .catch(() => sendResponse({ connected: false }));
       return true;
 

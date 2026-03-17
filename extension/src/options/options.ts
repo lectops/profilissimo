@@ -8,6 +8,7 @@ const shortcutLabel = $("shortcut-label") as HTMLElement;
 const shortcutLink = $("shortcut-link") as HTMLAnchorElement;
 const nmhIndicator = $("nmh-indicator") as HTMLSpanElement;
 const nmhText = $("nmh-text") as HTMLSpanElement;
+const nmhVersion = $("nmh-version") as HTMLDivElement;
 const nmhAction = $("nmh-action") as HTMLDivElement;
 const saveStatusEl = $("save-status") as HTMLDivElement;
 
@@ -127,16 +128,17 @@ async function init(): Promise<void> {
 
   // Check NMH connectivity
   let connected = false;
+  let version: string | null = null;
   try {
     const response = await chrome.runtime.sendMessage({ type: "health_check" });
     connected = !!response?.connected;
+    version = response?.version ?? null;
   } catch {
     // NMH not reachable
   }
   nmhIndicator.className = `indicator ${connected ? "connected" : "disconnected"}`;
-  nmhText.textContent = connected
-    ? "Connected"
-    : "Not connected";
+  nmhText.textContent = connected ? "Connected" : "Not connected";
+  nmhVersion.textContent = version ? `v${version}` : "";
   renderNmhAction(connected);
 }
 

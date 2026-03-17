@@ -34,6 +34,7 @@ export interface ProfileInfo {
 export interface NMHResponse {
   success: boolean;
   error?: string;
+  version?: string;
   profiles?: ProfileInfo[];
   config?: { defaultProfile: string | null; closeSourceTab: boolean };
 }

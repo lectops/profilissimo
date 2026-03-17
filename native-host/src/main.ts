@@ -1,4 +1,4 @@
-import { validateRequest, type NMHResponse } from "./schema.js";
+import { validateRequest, NMH_VERSION, type NMHResponse } from "./schema.js";
 import { discoverProfiles } from "./profiles.js";
 import { launchInProfile } from "./launcher.js";
 import { readConfig, writeConfig } from "./config.js";
@@ -115,7 +115,7 @@ async function handleMessage(raw: Buffer): Promise<NMHResponse> {
 
   switch (request.action) {
     case "health_check":
-      return { success: true };
+      return { success: true, version: NMH_VERSION };
 
     case "list_profiles":
       try {

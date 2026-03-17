@@ -33,11 +33,14 @@ export type NMHRequest = OpenUrlRequest | ListProfilesRequest | HealthCheckReque
 
 type NMHAction = NMHRequest["action"];
 
+export const NMH_VERSION = "0.1.1";
+
 export interface NMHResponse {
   success: boolean;
   error?: string;
+  version?: string;
   profiles?: ProfileInfo[];
-  config?: { defaultProfile: string | null };
+  config?: { defaultProfile: string | null; closeSourceTab: boolean };
 }
 
 const VALID_ACTIONS: NMHAction[] = ["open_url", "list_profiles", "health_check", "get_config", "set_config"];
