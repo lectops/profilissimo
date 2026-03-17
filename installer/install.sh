@@ -37,7 +37,7 @@ if [[ "$OS" == "linux" && "$ARCH" == "arm64" ]]; then
 fi
 
 ASSET_NAME="$BINARY_NAME-$OS-$ARCH"
-DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/latest/download/$ASSET_NAME"
+DOWNLOAD_URL="https://github.com/$GITHUB_REPO/releases/download/latest/$ASSET_NAME"
 
 # --- Determine NMH manifest directory ---
 case "$OS" in

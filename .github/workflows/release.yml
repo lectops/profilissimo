@@ -2,6 +2,7 @@ name: Release
 
 on:
   push:
+    branches: [main]
     tags: ["v*"]
 
 permissions:
@@ -25,24 +26,40 @@ jobs:
       - name: Build extension
         run: npm run build:extension
 
-      - name: Build NMH binaries
+      - name: Build NMH binary
         run: |
           cd native-host && mkdir -p bin
           bun build --compile --target=bun-darwin-arm64 src/main.ts --outfile bin/profilissimo-nmh-darwin-arm64
-          bun build --compile --target=bun-darwin-x64   src/main.ts --outfile bin/profilissimo-nmh-darwin-x64
-          bun build --compile --target=bun-linux-x64    src/main.ts --outfile bin/profilissimo-nmh-linux-x64
-          bun build --compile --target=bun-windows-x64  src/main.ts --outfile bin/profilissimo-nmh-windows-x64.exe
 
       - name: Package extension
         run: cd extension/dist && zip -r ../../profilissimo-extension.zip .
 
-      - name: Create GitHub Release
+      # Tagged push (v*) → create a new versioned release
+      - name: Create versioned release
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           generate_release_notes: true
           files: |
             native-host/bin/profilissimo-nmh-darwin-arm64
-            native-host/bin/profilissimo-nmh-darwin-x64
-            native-host/bin/profilissimo-nmh-linux-x64
-            native-host/bin/profilissimo-nmh-windows-x64.exe
+            profilissimo-extension.zip
+
+      # Push to main → update the rolling "latest" release
+      - name: Update latest release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Build
+          prerelease: true
+          make_latest: true
+          body: |
+            Automatically built from the latest commit on `main`.
+
+            | File | Description |
+            |------|-------------|
+            | `profilissimo-nmh-darwin-arm64` | NMH binary for macOS (Apple Silicon) |
+            | `profilissimo-extension.zip` | Chrome extension (load as unpacked) |
+          files: |
+            native-host/bin/profilissimo-nmh-darwin-arm64
             profilissimo-extension.zip
