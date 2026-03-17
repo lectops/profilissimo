@@ -33,7 +33,7 @@ export type NMHRequest = OpenUrlRequest | ListProfilesRequest | HealthCheckReque
 
 type NMHAction = NMHRequest["action"];
 
-export const NMH_VERSION = "0.1.1";
+export const NMH_VERSION = "1.0.0";
 
 export interface NMHResponse {
   success: boolean;
