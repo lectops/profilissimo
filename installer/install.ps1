@@ -2,7 +2,7 @@
 $ErrorActionPreference = "Stop"
 
 # --- Configuration (update these before publishing) ---
-$GithubRepo = "OWNER/profilissimo"
+$GithubRepo = "lectops/profilissimo"
 $ExtensionId = "EXTENSION_ID_HERE"
 $NmhName = "com.profilissimo.nmh"
 $BinaryName = "profilissimo-nmh.exe"

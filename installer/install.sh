@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # --- Configuration (update these before publishing) ---
-GITHUB_REPO="OWNER/profilissimo"
+GITHUB_REPO="lectops/profilissimo"
 EXTENSION_ID="EXTENSION_ID_HERE"
 NMH_NAME="com.profilissimo.nmh"
 INSTALL_DIR="$HOME/.profilissimo/bin"
