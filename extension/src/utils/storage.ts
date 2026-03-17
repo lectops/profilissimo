@@ -1,13 +1,11 @@
 export interface UserPreferences {
   defaultProfile: string | null;
   closeSourceTab: boolean;
-  showNotifications: boolean;
 }
 
 const DEFAULTS: UserPreferences = {
   defaultProfile: null,
   closeSourceTab: false,
-  showNotifications: true,
 };
 
 export async function getPreferences(): Promise<UserPreferences> {

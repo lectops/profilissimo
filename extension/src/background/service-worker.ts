@@ -9,6 +9,17 @@ self.addEventListener("unhandledrejection", (event) => {
   console.error("Profilissimo: unhandled rejection", event.reason);
 });
 
+// --- Current profile detection ---
+
+async function getCurrentProfileEmail(): Promise<string | null> {
+  try {
+    const info = await chrome.identity.getProfileUserInfo({ accountStatus: "ANY" as chrome.identity.AccountStatus });
+    return info.email || null;
+  } catch {
+    return null;
+  }
+}
+
 // --- Context Menu Setup ---
 
 // Profile directory is encoded directly in menu IDs (e.g. "page:Profile 1")
@@ -28,19 +39,24 @@ async function buildContextMenus(): Promise<void> {
 
   if (profiles.length === 0) return;
 
+  const currentEmail = await getCurrentProfileEmail();
+
   if (profiles.length === 1) {
     const profile = profiles[0];
+    const isCurrent = !!(currentEmail && profile.email === currentEmail);
 
     chrome.contextMenus.create({
       id: `page:${profile.directory}`,
-      title: `Open this page in ${profileLabel(profile)}`,
+      title: `Open this page in ${profileLabel(profile)}${isCurrent ? " (current)" : ""}`,
       contexts: ["page"],
+      enabled: !isCurrent,
     });
 
     chrome.contextMenus.create({
       id: `link:${profile.directory}`,
-      title: `Open link in ${profileLabel(profile)}`,
+      title: `Open link in ${profileLabel(profile)}${isCurrent ? " (current)" : ""}`,
       contexts: ["link"],
+      enabled: !isCurrent,
     });
   } else {
     chrome.contextMenus.create({
@@ -56,18 +72,25 @@ async function buildContextMenus(): Promise<void> {
     });
 
     for (const profile of profiles) {
+      const isCurrent = !!(currentEmail && profile.email === currentEmail);
+      const label = isCurrent
+        ? `${profileLabel(profile)} (current)`
+        : profileLabel(profile);
+
       chrome.contextMenus.create({
         id: `page:${profile.directory}`,
         parentId: "page_parent",
-        title: profileLabel(profile),
+        title: label,
         contexts: ["page"],
+        enabled: !isCurrent,
       });
 
       chrome.contextMenus.create({
         id: `link:${profile.directory}`,
         parentId: "link_parent",
-        title: profileLabel(profile),
+        title: label,
         contexts: ["link"],
+        enabled: !isCurrent,
       });
     }
   }

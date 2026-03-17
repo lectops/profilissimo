@@ -10,8 +10,7 @@ const settingsBtn = $("settings-btn") as HTMLButtonElement;
 const refreshBtn = $("refresh-btn") as HTMLButtonElement;
 const setupLink = $("setup-link") as HTMLAnchorElement;
 const copyInstallBtn = $("copy-install-btn") as HTMLButtonElement;
-
-const INSTALL_COMMAND = `curl -fsSL https://raw.githubusercontent.com/lectops/profilissimo/main/installer/install.sh | bash`;
+import { INSTALL_COMMAND } from "../utils/constants.js";
 
 const PROFILE_COLORS = [
   "#1a73e8", "#e8710a", "#d93025", "#188038",

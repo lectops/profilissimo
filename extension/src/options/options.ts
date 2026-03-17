@@ -1,19 +1,16 @@
 import { $ } from "../utils/dom.js";
 import { profileLabel } from "../utils/format.js";
 import { getPreferences, setPreferences } from "../utils/storage.js";
+import { INSTALL_COMMAND, UNINSTALL_COMMAND } from "../utils/constants.js";
 
 const defaultProfileSelect = $("default-profile") as HTMLSelectElement;
 const closeSourceTab = $("close-source-tab") as HTMLInputElement;
-const showNotifications = $("show-notifications") as HTMLInputElement;
 const shortcutLabel = $("shortcut-label") as HTMLElement;
 const shortcutLink = $("shortcut-link") as HTMLAnchorElement;
 const nmhIndicator = $("nmh-indicator") as HTMLSpanElement;
 const nmhText = $("nmh-text") as HTMLSpanElement;
 const nmhAction = $("nmh-action") as HTMLDivElement;
 const saveStatusEl = $("save-status") as HTMLDivElement;
-
-const INSTALL_COMMAND = `curl -fsSL https://raw.githubusercontent.com/lectops/profilissimo/main/installer/install.sh | bash`;
-const UNINSTALL_COMMAND = `rm -rf ~/.profilissimo && rm "$HOME/Library/Application Support/Google/Chrome/NativeMessagingHosts/com.profilissimo.nmh.json"`;
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -27,7 +24,6 @@ async function savePreferences(): Promise<void> {
   await setPreferences({
     defaultProfile: defaultProfileSelect.value || null,
     closeSourceTab: closeSourceTab.checked,
-    showNotifications: showNotifications.checked,
   });
   showSaved();
 }
@@ -79,7 +75,6 @@ async function init(): Promise<void> {
   const prefs = await getPreferences();
 
   closeSourceTab.checked = prefs.closeSourceTab;
-  showNotifications.checked = prefs.showNotifications;
 
   // Load profiles, then apply saved default profile selection
   try {
@@ -147,6 +142,5 @@ shortcutLink.addEventListener("click", (e) => {
 // Auto-save on change
 defaultProfileSelect.addEventListener("change", () => void savePreferences());
 closeSourceTab.addEventListener("change", () => void savePreferences());
-showNotifications.addEventListener("change", () => void savePreferences());
 
 void init();

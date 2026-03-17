@@ -1,14 +1,14 @@
-export interface OpenUrlRequest {
+interface OpenUrlRequest {
   action: "open_url";
   url: string;
   targetProfile: string;
 }
 
-export interface ListProfilesRequest {
+interface ListProfilesRequest {
   action: "list_profiles";
 }
 
-export interface HealthCheckRequest {
+interface HealthCheckRequest {
   action: "health_check";
 }
 

@@ -103,10 +103,15 @@ h2 {
   line-height: 1.5;
 }
 
-.install-cmd {
+.install-cmd-row {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.install-cmd {
+  flex: 1;
+  min-width: 0;
   background: #1e1e1e;
   border-radius: 10px;
   padding: 14px 16px;
@@ -114,7 +119,6 @@ h2 {
 }
 
 .install-cmd code {
-  flex: 1;
   font-family: "SF Mono", "Fira Code", "Fira Mono", Menlo, Consolas, monospace;
   font-size: 12px;
   color: #d4d4d4;
@@ -123,19 +127,20 @@ h2 {
 }
 
 .copy-btn {
-  padding: 5px 14px;
-  border: 1px solid #555;
-  border-radius: 6px;
-  background: #333;
-  color: #d4d4d4;
-  font-size: 12px;
+  padding: 8px 16px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  background: #fff;
+  color: #202124;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   flex-shrink: 0;
   transition: background 0.15s;
 }
 
 .copy-btn:hover {
-  background: #444;
+  background: #f1f3f4;
 }
 
 kbd {
