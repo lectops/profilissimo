@@ -3,7 +3,7 @@ set -euo pipefail
 
 # --- Configuration (update these before publishing) ---
 GITHUB_REPO="lectops/profilissimo"
-EXTENSION_ID="lnjibholnmclcdaoceljiepbgponmman"
+EXTENSION_ID="olhphbhieleagngagocedaildgefdmni"
 NMH_NAME="com.profilissimo.nmh"
 INSTALL_DIR="$HOME/.profilissimo/bin"
 BINARY_NAME="profilissimo-nmh"

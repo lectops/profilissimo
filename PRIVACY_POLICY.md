@@ -14,9 +14,9 @@ Profilissimo is a Chrome extension that lets you open tabs and links in differen
 
 ## What data is stored
 
-- **User preferences** — Your settings (default profile, close-source-tab toggle, show-notifications toggle) are stored in `chrome.storage.sync`, which Chrome may sync across your devices if you have Chrome Sync enabled.
+- **User preferences** — Your settings (default profile, close-source-tab toggle) are stored in a local config file (`~/.profilissimo/config.json`) on your computer. This file is shared across all Chrome profiles and is never transmitted anywhere.
 
-- **Last used profile** — The directory name of the last profile you transferred a tab to is stored in `chrome.storage.local` (device-only, not synced).
+- **Cached profile list** — The list of Chrome profiles is cached in `chrome.storage.local` (device-only, not synced) so the popup can load quickly.
 
 ## What data is NOT collected
 
