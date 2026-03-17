@@ -56,7 +56,7 @@ export async function discoverProfiles(): Promise<ProfileInfo[]> {
     .filter(([directory]) => directory.length > 0 && PROFILE_DIR_PATTERN.test(directory))
     .map(([directory, info]) => ({
       directory,
-      name: (info.gaia_name || info.name || directory).slice(0, 200),
+      name: (info.name || info.gaia_name || directory).slice(0, 200),
       email: info.user_name?.slice(0, 200),
       avatar: info.avatar_icon?.slice(0, 500),
     }));
