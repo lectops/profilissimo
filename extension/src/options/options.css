@@ -57,6 +57,37 @@ h2 {
   border-bottom: none;
 }
 
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.section-header h2 {
+  margin-bottom: 0;
+}
+
+.scope-badge {
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.scope-badge.shared {
+  background: #e8f0fe;
+  color: #1a56c4;
+}
+
+.scope-badge.per-profile {
+  background: #f1f3f4;
+  color: #5f6368;
+}
+
 .description {
   font-size: 13px;
   color: #5f6368;

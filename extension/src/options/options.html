@@ -14,7 +14,10 @@
     </header>
 
     <section class="section">
-      <h2>Default Profile</h2>
+      <div class="section-header">
+        <h2>Default Profile</h2>
+        <span class="scope-badge shared">Shared across profiles</span>
+      </div>
       <p class="description">Used for keyboard shortcut and single-click transfers.</p>
       <select id="default-profile">
         <option value="">None (use last used)</option>
@@ -22,7 +25,10 @@
     </section>
 
     <section class="section">
-      <h2>Behavior</h2>
+      <div class="section-header">
+        <h2>Behavior</h2>
+        <span class="scope-badge shared">Shared across profiles</span>
+      </div>
       <label class="toggle-row">
         <input type="checkbox" id="close-source-tab">
         <span>Close source tab after transfer</span>
@@ -30,7 +36,10 @@
     </section>
 
     <section class="section">
-      <h2>Keyboard Shortcut</h2>
+      <div class="section-header">
+        <h2>Keyboard Shortcut</h2>
+        <span class="scope-badge per-profile">Per profile</span>
+      </div>
       <p class="description">
         Current shortcut: <kbd id="shortcut-label">Alt+Shift+P</kbd>
       </p>
