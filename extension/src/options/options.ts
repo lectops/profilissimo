@@ -21,8 +21,12 @@ function showSaved(): void {
 
 async function saveConfig(updates: { defaultProfile?: string | null; closeSourceTab?: boolean }): Promise<void> {
   try {
-    await chrome.runtime.sendMessage({ type: "set_config", ...updates });
-    showSaved();
+    const response = await chrome.runtime.sendMessage({ type: "set_config", ...updates });
+    if (response?.success) {
+      showSaved();
+    } else {
+      console.warn("Profilissimo: failed to save config", response?.error);
+    }
   } catch {
     console.warn("Profilissimo: failed to save config");
   }
