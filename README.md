@@ -14,9 +14,15 @@
 
 ---
 
+## The problem
+
+You run multiple Chrome profiles — work and personal, or multiple client accounts — and links constantly open in the wrong one. You click "Switch profile" but Chrome just opens a blank window. So you end up copying the URL, switching profiles, pasting it, and closing the old tab. Every. Single. Time.
+
+Profilissimo fixes this. Right-click any link or tab, pick the profile, done. One click instead of five.
+
 ## What it does
 
-Profilissimo adds a popup menu, right-click context menus, and a keyboard shortcut to transfer any tab or link to another Chrome profile. No more copy-pasting URLs between browser windows.
+Profilissimo adds a popup menu, right-click context menus, and a keyboard shortcut to transfer any tab or link to a different Chrome profile instantly — no more copy-pasting URLs between browser windows.
 
 **Features:**
 - Click the toolbar icon to see all your Chrome profiles and transfer the current tab
