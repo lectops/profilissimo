@@ -9,23 +9,36 @@ body {
   font-size: 14px;
   color: #202124;
   background: #f8f9fa;
-  padding: 24px;
+  padding: 32px 16px;
 }
 
 .container {
   max-width: 540px;
   margin: 0 auto;
   background: #fff;
+  border-radius: 16px;
+  padding: 28px 32px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.options-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f1f3f4;
+}
+
+.options-logo {
   border-radius: 8px;
-  padding: 24px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 h1 {
   font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 24px;
+  font-weight: 700;
   color: #202124;
+  letter-spacing: -0.2px;
 }
 
 h2 {
@@ -36,8 +49,8 @@ h2 {
 }
 
 .section {
-  padding: 16px 0;
-  border-bottom: 1px solid #e8eaed;
+  padding: 18px 0;
+  border-bottom: 1px solid #f1f3f4;
 }
 
 .section:last-of-type {
@@ -48,23 +61,30 @@ h2 {
   font-size: 13px;
   color: #5f6368;
   margin-bottom: 8px;
+  line-height: 1.5;
 }
 
 select {
   width: 100%;
-  padding: 8px 12px;
+  padding: 9px 12px;
   border: 1px solid #dadce0;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 13px;
   color: #202124;
   background: #fff;
+  transition: border-color 0.15s;
+}
+
+select:focus {
+  outline: none;
+  border-color: #1a73e8;
 }
 
 .toggle-row {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 6px 0;
+  padding: 7px 0;
   cursor: pointer;
   font-size: 13px;
 }
@@ -72,8 +92,8 @@ select {
 kbd {
   background: #f1f3f4;
   border: 1px solid #dadce0;
-  border-radius: 3px;
-  padding: 1px 6px;
+  border-radius: 4px;
+  padding: 2px 7px;
   font-family: monospace;
   font-size: 12px;
 }
@@ -112,29 +132,42 @@ a:hover {
 
 .helper-action-btn {
   margin-top: 8px;
-  padding: 6px 14px;
+  padding: 7px 16px;
   background: none;
   border: 1px solid #dadce0;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 12px;
   color: #5f6368;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background 0.15s, border-color 0.15s;
 }
 
 .helper-action-btn:hover {
   background: #f1f3f4;
+  border-color: #c6c9cc;
   color: #202124;
+}
+
+.info-section {
+  padding-top: 14px;
+  padding-bottom: 0;
+}
+
+.info-text {
+  font-size: 12px;
+  color: #80868b;
+  line-height: 1.5;
 }
 
 .save-status {
   margin-top: 16px;
-  padding: 8px;
+  padding: 10px;
   text-align: center;
   background: #e6f4ea;
   color: #137333;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 12px;
+  font-weight: 500;
 }
 
 .hidden {

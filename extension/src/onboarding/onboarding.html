@@ -9,8 +9,8 @@
 <body>
   <div class="container">
     <header class="hero">
-      <img src="../../public/icons/p-logo.png" alt="" width="64" height="64" class="logo">
-      <h1>Welcome to <img src="../../public/icons/profilissimo-logo.png" alt="Profilissimo" height="32" class="wordmark"></h1>
+      <img src="../../public/icons/p-logo.png" alt="" width="72" height="72" class="logo">
+      <h1>Welcome to Profilissimo</h1>
       <p class="subtitle">Open tabs in any Chrome profile with one click.</p>
     </header>
 
@@ -20,12 +20,14 @@
           <div class="step-number">1</div>
           <div class="step-content">
             <h2>Install the helper app</h2>
-            <p class="step-desc">Profilissimo needs a small helper to communicate with Chrome profiles. Open a terminal and run:</p>
+            <p class="step-desc">Profilissimo needs a small helper app to communicate with Chrome profiles. Open Terminal and run this command:</p>
 
             <div class="install-cmd" id="cmd-macos">
               <code>curl -fsSL https://raw.githubusercontent.com/lectops/profilissimo/main/installer/install.sh | bash</code>
               <button class="copy-btn" data-target="cmd-macos" title="Copy to clipboard">Copy</button>
             </div>
+
+            <p class="step-hint">You only need to do this once — the helper app works across all your Chrome profiles.</p>
           </div>
         </div>
 
@@ -33,7 +35,7 @@
           <div class="step-number">2</div>
           <div class="step-content">
             <h2>Restart Chrome</h2>
-            <p class="step-desc">After installing, quit Chrome completely (<kbd id="quit-shortcut">Cmd+Q</kbd>) and reopen it. Chrome only detects new native apps on startup.</p>
+            <p class="step-desc">Quit Chrome completely (<kbd>Cmd+Q</kbd>) and reopen it. Chrome only detects new helper apps on startup.</p>
           </div>
         </div>
 
@@ -61,6 +63,10 @@
           <button id="done-btn" class="btn-primary">Get Started</button>
         </div>
       </div>
+    </div>
+
+    <div class="tip-card">
+      <strong>Tip:</strong> Install this extension in every Chrome profile you want to transfer tabs <em>from</em>. The helper app only needs to be installed once.
     </div>
   </div>
 
