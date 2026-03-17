@@ -6,3 +6,6 @@ build/
 .env
 .DS_Store
 native-host/bin/
+native-host/profilissimo-nmh.sh
+*.zip
+*.docx
