@@ -1,0 +1,8 @@
+node_modules/
+dist/
+build/
+*.js.map
+*.tsbuildinfo
+.env
+.DS_Store
+native-host/bin/

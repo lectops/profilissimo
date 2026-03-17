@@ -1,0 +1,48 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build extension
+        run: npm run build:extension
+
+      - name: Build NMH binaries
+        run: |
+          cd native-host && mkdir -p bin
+          bun build --compile --target=bun-darwin-arm64 src/main.ts --outfile bin/profilissimo-nmh-darwin-arm64
+          bun build --compile --target=bun-darwin-x64   src/main.ts --outfile bin/profilissimo-nmh-darwin-x64
+          bun build --compile --target=bun-linux-x64    src/main.ts --outfile bin/profilissimo-nmh-linux-x64
+          bun build --compile --target=bun-windows-x64  src/main.ts --outfile bin/profilissimo-nmh-windows-x64.exe
+
+      - name: Package extension
+        run: cd extension/dist && zip -r ../../profilissimo-extension.zip .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            native-host/bin/profilissimo-nmh-darwin-arm64
+            native-host/bin/profilissimo-nmh-darwin-x64
+            native-host/bin/profilissimo-nmh-linux-x64
+            native-host/bin/profilissimo-nmh-windows-x64.exe
+            profilissimo-extension.zip

@@ -1,0 +1,17 @@
+{
+  "name": "profilissimo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Open the current tab or any link in a different Chrome profile",
+  "workspaces": [
+    "extension",
+    "native-host"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces",
+    "build:extension": "npm run build -w extension",
+    "build:nmh": "npm run build -w native-host",
+    "dev": "npm run dev -w extension",
+    "build:release": "npm run build:extension && npm run build:binary:all -w native-host"
+  }
+}

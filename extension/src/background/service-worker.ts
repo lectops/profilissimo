@@ -1,0 +1,266 @@
+import type { ProfileInfo } from "../types/messages.js";
+import { profileLabel, errorMessage } from "../utils/format.js";
+import { healthCheck, openUrlInProfile } from "../utils/native-messaging.js";
+import { isTransferableUrl } from "../utils/url.js";
+import { getProfiles, clearProfileCache } from "../utils/profiles.js";
+import { getPreferences, getLastUsedProfile, setLastUsedProfile } from "../utils/storage.js";
+
+self.addEventListener("unhandledrejection", (event) => {
+  console.error("Profilissimo: unhandled rejection", event.reason);
+});
+
+// --- Context Menu Setup ---
+
+// Profile directory is encoded directly in menu IDs (e.g. "page:Profile 1")
+// so the onClicked handler can extract it without an in-memory map.
+// This avoids a race condition in MV3: context menu clicks can wake the
+// service worker, but an async init may not have finished populating a map yet.
+
+async function buildContextMenus(): Promise<void> {
+  await chrome.contextMenus.removeAll();
+
+  let profiles: ProfileInfo[];
+  try {
+    profiles = await getProfiles();
+  } catch {
+    return; // NMH not available, skip context menus
+  }
+
+  if (profiles.length === 0) return;
+
+  if (profiles.length === 1) {
+    const profile = profiles[0];
+
+    chrome.contextMenus.create({
+      id: `page:${profile.directory}`,
+      title: `Open this page in ${profileLabel(profile)}`,
+      contexts: ["page"],
+    });
+
+    chrome.contextMenus.create({
+      id: `link:${profile.directory}`,
+      title: `Open link in ${profileLabel(profile)}`,
+      contexts: ["link"],
+    });
+  } else {
+    chrome.contextMenus.create({
+      id: "page_parent",
+      title: "Open this page in\u2026",
+      contexts: ["page"],
+    });
+
+    chrome.contextMenus.create({
+      id: "link_parent",
+      title: "Open link in\u2026",
+      contexts: ["link"],
+    });
+
+    for (const profile of profiles) {
+      chrome.contextMenus.create({
+        id: `page:${profile.directory}`,
+        parentId: "page_parent",
+        title: profileLabel(profile),
+        contexts: ["page"],
+      });
+
+      chrome.contextMenus.create({
+        id: `link:${profile.directory}`,
+        parentId: "link_parent",
+        title: profileLabel(profile),
+        contexts: ["link"],
+      });
+    }
+  }
+}
+
+// --- Core transfer logic ---
+
+async function safeCloseTab(tabId: number): Promise<void> {
+  try {
+    await chrome.tabs.remove(tabId);
+  } catch {
+    // Tab may already be closed
+  }
+}
+
+interface TransferResult {
+  success: boolean;
+  error?: string;
+}
+
+interface ProfilesResult {
+  success: boolean;
+  profiles?: ProfileInfo[];
+  error?: string;
+}
+
+async function handleTransfer(url: string, targetProfile: string, sourceTabId?: number): Promise<TransferResult> {
+  if (!isTransferableUrl(url)) {
+    return { success: false, error: "URL must use http: or https: scheme" };
+  }
+
+  try {
+    const response = await openUrlInProfile(url, targetProfile);
+    if (response.success) {
+      await setLastUsedProfile(targetProfile);
+      const prefs = await getPreferences();
+      if (prefs.closeSourceTab && sourceTabId !== undefined) {
+        await safeCloseTab(sourceTabId);
+      }
+    }
+    return response;
+  } catch (err) {
+    return { success: false, error: errorMessage(err) };
+  }
+}
+
+async function handleGetProfiles(forceRefresh?: boolean): Promise<ProfilesResult> {
+  try {
+    const profiles = await getProfiles(forceRefresh);
+    return { success: true, profiles };
+  } catch (err) {
+    return { success: false, error: errorMessage(err) };
+  }
+}
+
+// --- Initialization ---
+
+// Runs on every service worker start (install, Chrome launch, AND wake-from-idle).
+// This is critical in MV3: service workers are terminated after ~30s of idle,
+// and context menus need their Chrome API state rebuilt on every restart.
+void (async () => {
+  try {
+    const connected = await healthCheck();
+    if (connected) {
+      await buildContextMenus();
+    }
+  } catch (err) {
+    console.error("Profilissimo: init failed", err);
+  }
+})();
+
+chrome.runtime.onInstalled.addListener((details) => {
+  if (details.reason === "install") {
+    chrome.tabs.create({ url: chrome.runtime.getURL("src/onboarding/onboarding.html") });
+  }
+});
+
+chrome.contextMenus.onClicked.addListener(async (info, tab) => {
+  const menuItemId = String(info.menuItemId);
+
+  // Extract prefix ("page" or "link") and profile directory from menu ID.
+  // Directory is everything after the first ":", which is safe because
+  // directories are validated against /^[a-zA-Z0-9 _-]+$/ (no colons).
+  const colonIndex = menuItemId.indexOf(":");
+  if (colonIndex === -1) return;
+
+  const prefix = menuItemId.slice(0, colonIndex);
+  const profileDir = menuItemId.slice(colonIndex + 1);
+
+  if ((prefix !== "page" && prefix !== "link") || !profileDir) return;
+
+  const url = prefix === "link" ? info.linkUrl : tab?.url;
+  if (!url) return;
+
+  const sourceTabId = prefix === "page" ? tab?.id : undefined;
+  const result = await handleTransfer(url, profileDir, sourceTabId);
+
+  if (!result.success) {
+    console.error("Profilissimo: context menu transfer failed", result.error);
+  }
+});
+
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command !== "transfer-to-default") return;
+
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab?.url || !isTransferableUrl(tab.url)) return;
+
+  const prefs = await getPreferences();
+  const targetProfile = prefs.defaultProfile ?? (await getLastUsedProfile());
+
+  if (!targetProfile) {
+    console.warn("Profilissimo: no default or last-used profile set");
+    return;
+  }
+
+  const result = await handleTransfer(tab.url, targetProfile, tab.id);
+
+  if (!result.success) {
+    console.error("Profilissimo: shortcut transfer failed", result.error);
+  }
+});
+
+// --- Internal message handling ---
+
+interface TransferMessage {
+  type: "transfer";
+  url: string;
+  targetProfile: string;
+  sourceTabId?: number;
+}
+
+interface GetProfilesMessage {
+  type: "get_profiles";
+  forceRefresh?: boolean;
+}
+
+interface HealthCheckMessage {
+  type: "health_check";
+}
+
+interface RefreshMenusMessage {
+  type: "refresh_menus";
+}
+
+type ExtensionMessage = TransferMessage | GetProfilesMessage | HealthCheckMessage | RefreshMenusMessage;
+
+function isValidMessage(message: unknown): message is ExtensionMessage {
+  if (typeof message !== "object" || message === null) return false;
+  const msg = message as Record<string, unknown>;
+  switch (msg.type) {
+    case "transfer":
+      return typeof msg.url === "string" && msg.url.length > 0 &&
+        typeof msg.targetProfile === "string" && msg.targetProfile.length > 0 &&
+        (msg.sourceTabId === undefined || typeof msg.sourceTabId === "number");
+    case "get_profiles":
+      return msg.forceRefresh === undefined || typeof msg.forceRefresh === "boolean";
+    case "health_check":
+    case "refresh_menus":
+      return true;
+    default:
+      return false;
+  }
+}
+
+chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) => {
+  if (sender.id !== chrome.runtime.id) return;
+  if (!isValidMessage(message)) return;
+
+  switch (message.type) {
+    case "transfer":
+      handleTransfer(message.url, message.targetProfile, message.sourceTabId)
+        .then(sendResponse)
+        .catch(() => sendResponse({ success: false, error: "Transfer failed unexpectedly" }));
+      return true;
+
+    case "get_profiles":
+      handleGetProfiles(message.forceRefresh)
+        .then(sendResponse)
+        .catch(() => sendResponse({ success: false, error: "Failed to load profiles" }));
+      return true;
+
+    case "health_check":
+      healthCheck()
+        .then((connected) => sendResponse({ connected }))
+        .catch(() => sendResponse({ connected: false }));
+      return true;
+
+    case "refresh_menus":
+      clearProfileCache();
+      buildContextMenus()
+        .then(() => sendResponse({ success: true }))
+        .catch(() => sendResponse({ success: false, error: "Failed to refresh menus" }));
+      return true;
+  }
+});

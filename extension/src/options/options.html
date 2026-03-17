@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profilissimo Settings</title>
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <div class="container">
+    <h1>Profilissimo Settings</h1>
+
+    <section class="section">
+      <h2>Default Profile</h2>
+      <p class="description">Used for keyboard shortcut and single-click transfers.</p>
+      <select id="default-profile">
+        <option value="">None (use last used)</option>
+      </select>
+    </section>
+
+    <section class="section">
+      <h2>Behavior</h2>
+      <label class="toggle-row">
+        <input type="checkbox" id="close-source-tab">
+        <span>Close source tab after transfer</span>
+      </label>
+      <label class="toggle-row">
+        <input type="checkbox" id="show-notifications" checked>
+        <span>Show notifications on transfer</span>
+      </label>
+    </section>
+
+    <section class="section">
+      <h2>Keyboard Shortcut</h2>
+      <p class="description">
+        Current shortcut: <kbd id="shortcut-label">Alt+Shift+P</kbd>
+      </p>
+      <p class="description">
+        <a href="#" id="shortcut-link">Change in Chrome extension settings</a>
+      </p>
+    </section>
+
+    <section class="section">
+      <h2>Native Messaging Host</h2>
+      <div id="nmh-status" class="nmh-status">
+        <span id="nmh-indicator" class="indicator"></span>
+        <span id="nmh-text">Checking…</span>
+      </div>
+    </section>
+
+    <div id="save-status" class="save-status hidden">Settings saved</div>
+  </div>
+
+  <script type="module" src="options.ts"></script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Welcome to Profilissimo</title>
+  <link rel="stylesheet" href="onboarding.css">
+</head>
+<body>
+  <div class="container">
+    <header class="hero">
+      <img src="../../public/icons/p-logo.png" alt="" width="64" height="64" class="logo">
+      <h1>Welcome to <img src="../../public/icons/profilissimo-logo.png" alt="Profilissimo" height="32" class="wordmark"></h1>
+      <p class="subtitle">Open tabs in any Chrome profile with one click.</p>
+    </header>
+
+    <div class="card">
+      <div id="setup-section">
+        <div class="step">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h2>Install the helper app</h2>
+            <p class="step-desc">Profilissimo needs a small helper to communicate with Chrome profiles. Open a terminal and run:</p>
+
+            <div class="os-tabs">
+              <button class="os-tab active" data-os="macos">macOS</button>
+              <button class="os-tab" data-os="linux">Linux</button>
+              <button class="os-tab" data-os="windows">Windows</button>
+            </div>
+
+            <div class="install-cmd" id="cmd-macos">
+              <code>curl -fsSL https://raw.githubusercontent.com/OWNER/profilissimo/main/installer/install.sh | bash</code>
+              <button class="copy-btn" data-target="cmd-macos" title="Copy to clipboard">Copy</button>
+            </div>
+            <div class="install-cmd hidden" id="cmd-linux">
+              <code>curl -fsSL https://raw.githubusercontent.com/OWNER/profilissimo/main/installer/install.sh | bash</code>
+              <button class="copy-btn" data-target="cmd-linux" title="Copy to clipboard">Copy</button>
+            </div>
+            <div class="install-cmd hidden" id="cmd-windows">
+              <code>irm https://raw.githubusercontent.com/OWNER/profilissimo/main/installer/install.ps1 | iex</code>
+              <button class="copy-btn" data-target="cmd-windows" title="Copy to clipboard">Copy</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h2>Restart Chrome</h2>
+            <p class="step-desc">After installing, quit Chrome completely (<kbd id="quit-shortcut">Cmd+Q</kbd>) and reopen it. Chrome only detects new native apps on startup.</p>
+          </div>
+        </div>
+
+        <div class="step">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h2>Verify connection</h2>
+            <p class="step-desc">Click the button below to check that everything is working.</p>
+            <div class="verify-row">
+              <button id="check-btn" class="btn-primary">Check Connection</button>
+              <div id="status" class="status-indicator hidden">
+                <span id="status-dot" class="dot"></span>
+                <span id="status-text"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="success-section" class="hidden">
+        <div class="success-content">
+          <div class="success-icon">&#10003;</div>
+          <h2>You're all set!</h2>
+          <p class="step-desc">Profilissimo is connected and ready to use. Click the extension icon in your toolbar to transfer tabs between profiles.</p>
+          <button id="done-btn" class="btn-primary">Get Started</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="onboarding.ts"></script>
+</body>
+</html>

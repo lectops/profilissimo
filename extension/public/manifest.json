@@ -1,0 +1,37 @@
+{
+  "manifest_version": 3,
+  "name": "Profilissimo",
+  "version": "0.1.0",
+  "description": "Open the current tab or any link in a different Chrome profile",
+  "permissions": [
+    "contextMenus",
+    "nativeMessaging",
+    "storage",
+    "tabs"
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "background": {
+    "service_worker": "src/background/service-worker.ts"
+  },
+  "action": {
+    "default_popup": "src/popup/popup.html",
+    "default_title": "Profilissimo"
+  },
+  "options_page": "src/options/options.html",
+  "commands": {
+    "transfer-to-default": {
+      "suggested_key": {
+        "default": "Alt+Shift+P"
+      },
+      "description": "Open current page in default target profile"
+    }
+  },
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  }
+}

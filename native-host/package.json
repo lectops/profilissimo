@@ -1,0 +1,19 @@
+{
+  "name": "profilissimo-native-host",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:binary": "bun build --compile src/main.ts --outfile bin/profilissimo-nmh",
+    "build:binary:all": "bash scripts/build-binaries.sh",
+    "start": "node dist/main.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
