@@ -1,6 +1,6 @@
 import type { ProfileInfo } from "../types/messages.js";
 import { profileLabel, errorMessage } from "../utils/format.js";
-import { healthCheck, openUrlInProfile } from "../utils/native-messaging.js";
+import { healthCheck, openUrlInProfile, getConfig, setConfig } from "../utils/native-messaging.js";
 import { isTransferableUrl } from "../utils/url.js";
 import { getProfiles, clearProfileCache } from "../utils/profiles.js";
 import { getPreferences, getLastUsedProfile, setLastUsedProfile } from "../utils/storage.js";
@@ -199,8 +199,16 @@ chrome.commands.onCommand.addListener(async (command) => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.url || !isTransferableUrl(tab.url)) return;
 
-  const prefs = await getPreferences();
-  const targetProfile = prefs.defaultProfile ?? (await getLastUsedProfile());
+  let targetProfile: string | null = null;
+  try {
+    const config = await getConfig();
+    targetProfile = config.defaultProfile;
+  } catch {
+    // NMH config not available
+  }
+  if (!targetProfile) {
+    targetProfile = await getLastUsedProfile();
+  }
 
   if (!targetProfile) {
     console.warn("Profilissimo: no default or last-used profile set");
@@ -236,7 +244,16 @@ interface RefreshMenusMessage {
   type: "refresh_menus";
 }
 
-type ExtensionMessage = TransferMessage | GetProfilesMessage | HealthCheckMessage | RefreshMenusMessage;
+interface GetConfigMessage {
+  type: "get_config";
+}
+
+interface SetConfigMessage {
+  type: "set_config";
+  defaultProfile: string | null;
+}
+
+type ExtensionMessage = TransferMessage | GetProfilesMessage | HealthCheckMessage | RefreshMenusMessage | GetConfigMessage | SetConfigMessage;
 
 function isValidMessage(message: unknown): message is ExtensionMessage {
   if (typeof message !== "object" || message === null) return false;
@@ -248,8 +265,11 @@ function isValidMessage(message: unknown): message is ExtensionMessage {
         (msg.sourceTabId === undefined || typeof msg.sourceTabId === "number");
     case "get_profiles":
       return msg.forceRefresh === undefined || typeof msg.forceRefresh === "boolean";
+    case "set_config":
+      return msg.defaultProfile === null || typeof msg.defaultProfile === "string";
     case "health_check":
     case "refresh_menus":
+    case "get_config":
       return true;
     default:
       return false;
@@ -284,6 +304,18 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
       buildContextMenus()
         .then(() => sendResponse({ success: true }))
         .catch(() => sendResponse({ success: false, error: "Failed to refresh menus" }));
+      return true;
+
+    case "get_config":
+      getConfig()
+        .then((config) => sendResponse({ success: true, config }))
+        .catch(() => sendResponse({ success: false, error: "Failed to read config" }));
+      return true;
+
+    case "set_config":
+      setConfig(message.defaultProfile)
+        .then(() => sendResponse({ success: true }))
+        .catch(() => sendResponse({ success: false, error: "Failed to save config" }));
       return true;
   }
 });

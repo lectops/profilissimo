@@ -1,10 +1,8 @@
 export interface UserPreferences {
-  defaultProfile: string | null;
   closeSourceTab: boolean;
 }
 
 const DEFAULTS: UserPreferences = {
-  defaultProfile: null,
   closeSourceTab: false,
 };
 

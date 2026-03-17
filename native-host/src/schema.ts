@@ -19,7 +19,16 @@ export interface HealthCheckRequest {
   action: "health_check";
 }
 
-export type NMHRequest = OpenUrlRequest | ListProfilesRequest | HealthCheckRequest;
+export interface GetConfigRequest {
+  action: "get_config";
+}
+
+export interface SetConfigRequest {
+  action: "set_config";
+  defaultProfile: string | null;
+}
+
+export type NMHRequest = OpenUrlRequest | ListProfilesRequest | HealthCheckRequest | GetConfigRequest | SetConfigRequest;
 
 type NMHAction = NMHRequest["action"];
 
@@ -27,9 +36,10 @@ export interface NMHResponse {
   success: boolean;
   error?: string;
   profiles?: ProfileInfo[];
+  config?: { defaultProfile: string | null };
 }
 
-const VALID_ACTIONS: NMHAction[] = ["open_url", "list_profiles", "health_check"];
+const VALID_ACTIONS: NMHAction[] = ["open_url", "list_profiles", "health_check", "get_config", "set_config"];
 const ALLOWED_URL_SCHEMES = ["http:", "https:"];
 
 export const PROFILE_DIR_PATTERN = /^[a-zA-Z0-9 _-]+$/;
@@ -82,6 +92,23 @@ export function validateRequest(data: unknown): { valid: true; request: NMHReque
 
   if (action === "list_profiles") {
     return { valid: true, request: { action: "list_profiles" } };
+  }
+
+  if (action === "get_config") {
+    return { valid: true, request: { action: "get_config" } };
+  }
+
+  if (action === "set_config") {
+    if (obj.defaultProfile !== null && typeof obj.defaultProfile !== "string") {
+      return { valid: false, error: "set_config requires 'defaultProfile' to be a string or null" };
+    }
+    return {
+      valid: true,
+      request: {
+        action: "set_config",
+        defaultProfile: typeof obj.defaultProfile === "string" ? obj.defaultProfile : null,
+      },
+    };
   }
 
   return { valid: true, request: { action: "health_check" } };

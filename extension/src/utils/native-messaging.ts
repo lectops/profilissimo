@@ -18,6 +18,9 @@ function isNMHResponse(value: unknown): value is NMHResponse {
     if (!Array.isArray(obj.profiles)) return false;
     if (!obj.profiles.every(isProfileInfo)) return false;
   }
+  if (obj.config !== undefined) {
+    if (typeof obj.config !== "object" || obj.config === null) return false;
+  }
   return true;
 }
 
@@ -63,4 +66,13 @@ export async function listProfiles(): Promise<NMHResponse> {
 
 export async function openUrlInProfile(url: string, targetProfile: string): Promise<NMHResponse> {
   return sendNativeMessage({ action: "open_url", url, targetProfile });
+}
+
+export async function getConfig(): Promise<{ defaultProfile: string | null }> {
+  const response = await sendNativeMessage({ action: "get_config" });
+  return response.config ?? { defaultProfile: null };
+}
+
+export async function setConfig(defaultProfile: string | null): Promise<void> {
+  await sendNativeMessage({ action: "set_config", defaultProfile });
 }

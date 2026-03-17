@@ -22,10 +22,21 @@ function showSaved(): void {
 
 async function savePreferences(): Promise<void> {
   await setPreferences({
-    defaultProfile: defaultProfileSelect.value || null,
     closeSourceTab: closeSourceTab.checked,
   });
   showSaved();
+}
+
+async function saveDefaultProfile(): Promise<void> {
+  try {
+    await chrome.runtime.sendMessage({
+      type: "set_config",
+      defaultProfile: defaultProfileSelect.value || null,
+    });
+    showSaved();
+  } catch {
+    console.warn("Profilissimo: failed to save default profile");
+  }
 }
 
 function createCopyButton(label: string, command: string): HTMLButtonElement {
@@ -71,12 +82,11 @@ function renderNmhAction(connected: boolean): void {
 }
 
 async function init(): Promise<void> {
-  // Load preferences first
+  // Load per-profile preferences
   const prefs = await getPreferences();
-
   closeSourceTab.checked = prefs.closeSourceTab;
 
-  // Load profiles, then apply saved default profile selection
+  // Load profiles for the default profile dropdown
   try {
     const response = await chrome.runtime.sendMessage({
       type: "get_profiles",
@@ -96,13 +106,18 @@ async function init(): Promise<void> {
     console.warn("Profilissimo: failed to load profiles", err);
   }
 
-  // Apply saved default after options are populated
-  if (prefs.defaultProfile) {
-    defaultProfileSelect.value = prefs.defaultProfile;
-    // Clear stale reference if profile no longer exists
-    if (defaultProfileSelect.value !== prefs.defaultProfile) {
-      await setPreferences({ defaultProfile: null });
+  // Load shared default profile from NMH config
+  try {
+    const configResponse = await chrome.runtime.sendMessage({ type: "get_config" });
+    if (configResponse?.success && configResponse.config?.defaultProfile) {
+      defaultProfileSelect.value = configResponse.config.defaultProfile;
+      // Clear if profile no longer exists in the dropdown
+      if (defaultProfileSelect.value !== configResponse.config.defaultProfile) {
+        await chrome.runtime.sendMessage({ type: "set_config", defaultProfile: null });
+      }
     }
+  } catch {
+    // NMH config not available
   }
 
   // Load actual keyboard shortcut from Chrome
@@ -140,7 +155,7 @@ shortcutLink.addEventListener("click", (e) => {
 });
 
 // Auto-save on change
-defaultProfileSelect.addEventListener("change", () => void savePreferences());
+defaultProfileSelect.addEventListener("change", () => void saveDefaultProfile());
 closeSourceTab.addEventListener("change", () => void savePreferences());
 
 void init();

@@ -1,6 +1,7 @@
 import { validateRequest, type NMHResponse } from "./schema.js";
 import { discoverProfiles } from "./profiles.js";
 import { launchInProfile } from "./launcher.js";
+import { readConfig, writeConfig } from "./config.js";
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : "Unknown error";
@@ -127,6 +128,22 @@ async function handleMessage(raw: Buffer): Promise<NMHResponse> {
     case "open_url":
       try {
         await launchInProfile(request.url, request.targetProfile);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: errorMessage(err) };
+      }
+
+    case "get_config":
+      try {
+        const config = await readConfig();
+        return { success: true, config };
+      } catch (err) {
+        return { success: false, error: errorMessage(err) };
+      }
+
+    case "set_config":
+      try {
+        await writeConfig({ defaultProfile: request.defaultProfile });
         return { success: true };
       } catch (err) {
         return { success: false, error: errorMessage(err) };
