@@ -39,19 +39,66 @@ Profilissimo eliminates that workflow entirely. Right-click a link, pick a profi
 
 ## How It Works
 
-Chrome extensions cannot launch other profiles directly. Profilissimo bridges this gap with a **Native Messaging Host (NMH)**, a lightweight local binary that the extension communicates with over Chrome's native messaging protocol.
+Chrome extensions are sandboxed — they cannot launch other profiles directly. Profilissimo bridges this gap with a **Native Messaging Host (NMH)**, a lightweight local binary that the extension communicates with over Chrome's [native messaging protocol](https://developer.chrome.com/docs/extensions/develop/concepts/native-messaging) (4-byte length-prefixed JSON over stdin/stdout).
 
 ```
 ┌─────────────────────┐         ┌──────────────────────┐         ┌───────────────────────────┐
 │   Chrome Extension  │  stdio  │     NMH Binary       │  spawn  │        Chrome             │
 │                     │────────▶│                      │────────▶│  --profile-directory=...  │
-│  (sends JSON msg)   │         │ (validates & routes) │         │  --new-window <url>       │
+│  (sends JSON msg)   │         │ (validates & routes) │         │  -- <url>                 │
 └─────────────────────┘         └──────────────────────┘         └───────────────────────────┘
 ```
 
-1. The extension sends a JSON message containing the target profile and URL.
-2. The NMH validates the request (URL scheme, profile name format).
-3. The NMH spawns a new Chrome process with the correct `--profile-directory` flag.
+**End-to-end flow:**
+
+1. User right-clicks a page or link and selects a target profile (or uses the popup/keyboard shortcut).
+2. The service worker sends a JSON message to the NMH: `{ action: "open_url", url: "https://...", targetProfile: "Profile 2" }`.
+3. The NMH validates the request (URL scheme, profile name format).
+4. The NMH spawns a new Chrome process with `--profile-directory="Profile 2" -- <url>`.
+5. The NMH writes `{ success: true }` back to the extension.
+6. The extension optionally closes the source tab.
+
+### Architecture in Detail
+
+The system is an npm workspaces monorepo with two packages: `extension/` and `native-host/`.
+
+#### Chrome Extension (`extension/`)
+
+Built with Vite + `@crxjs/vite-plugin`. Four entry points:
+
+- **Service worker** (`src/background/service-worker.ts`) — The central hub. Builds right-click context menus listing your Chrome profiles, handles keyboard shortcuts, and routes messages between the popup/options UI and the NMH. In Manifest V3, service workers are terminated after ~30 seconds of idle, so context menus are rebuilt on every wake.
+
+- **Popup** (`src/popup/`) — The toolbar panel that appears when you click the extension icon. Displays all discovered Chrome profiles as a clickable list for one-click tab transfer.
+
+- **Options** (`src/options/`) — Settings page where you configure your default profile, toggle auto-close, and manage notifications.
+
+- **Onboarding** (`src/onboarding/`) — A first-run setup guide shown automatically on install.
+
+Key utilities in `src/utils/`:
+| File | Purpose |
+|------|---------|
+| `native-messaging.ts` | NMH communication with 15-second timeout |
+| `storage.ts` | Chrome storage wrapper for user preferences |
+| `url.ts` | URL validation (scheme checks, flag injection prevention) |
+| `profiles.ts` | Profile list fetching and caching |
+
+#### Native Messaging Host (`native-host/`)
+
+Compiled to a standalone binary with Bun. The NMH has a simple lifecycle: read one message from stdin, handle it, write one response to stdout, then exit.
+
+- **`main.ts`** — The message loop. Reads a 4-byte length header followed by a JSON payload from stdin, dispatches to the appropriate handler, and writes the response back using the same wire format.
+
+- **`schema.ts`** — Validates all incoming messages. Only five actions are accepted: `open_url`, `list_profiles`, `health_check`, `get_config`, `set_config`.
+
+- **`profiles.ts`** — Discovers Chrome profiles by reading the `Local State` JSON file where Chrome stores profile metadata (name, email, avatar).
+
+- **`launcher.ts`** — The core action: locates the Chrome executable on disk and spawns a new detached process with `--profile-directory` and the target URL.
+
+- **`config.ts`** — Reads and writes user configuration at `~/.profilissimo/config.json`.
+
+#### Message Types
+
+Defined in `extension/src/types/messages.ts`. The `NMHRequest` type is a [discriminated union](https://www.typescriptlang.org/docs/handbook/2/narrowing.html#discriminated-unions) on the `action` field — TypeScript can narrow the type in `switch` statements so each branch knows exactly which fields are available.
 
 ## Installation
 
