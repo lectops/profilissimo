@@ -104,7 +104,7 @@ Defined in `extension/src/types/messages.ts`. The `NMHRequest` type is a [discri
 
 ### Step 1: Install the Extension
 
-Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/profilissimo/kfbnjandcegjgiaheiimnfmjbnhgiahp) or load it manually:
+Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/profilissimo/olhphbhieleagngagocedaildgefdmni) or load it manually:
 
 1. Clone this repo and build the extension (see [Building from Source](#building-from-source))
 2. Open `chrome://extensions` in Chrome
