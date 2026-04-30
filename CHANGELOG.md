@@ -15,6 +15,7 @@ Update this file in the same PR as the change, not at release time.
 - Profilissimo now works on Chrome internal pages: triggering a transfer from `chrome://downloads`, `chrome://settings`, `chrome://bookmarks`, etc. opens the same page in the target profile (so you see *that* profile's downloads/settings/bookmarks).
 - Triggering Profilissimo from a tab with no usable URL (e.g. `about:blank`, a still-loading tab, or a `javascript:` URL) now opens a fresh window in the target profile instead of failing silently.
 - Settings page surfaces a "Connected — update available" status when the helper app is older than this extension expects, with a one-click copy of the update command.
+- URL pinning (off by default): designate that a specific hostname always opens in a chosen profile. Right-click any page → "Always open this site in…" to add a rule in one click, or manage rules from the new "Pinned URLs" section in Settings. Matches the full hostname only (`mail.google.com` ≠ `docs.google.com`). When you navigate to a pinned site in the wrong profile, Profilissimo opens it in the right one and closes the source tab. Requires the new `webNavigation` permission, which the extension only uses while the toggle is on.
 
 ### Changed
 - Onboarding hero shrinks (smaller logo, no celebration badge) when there are still profiles to install in, so the remaining step reads as the primary task instead of a footnote. The "You're all set!" celebration is preserved for users with only one Chrome profile.

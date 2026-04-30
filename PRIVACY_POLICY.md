@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** March 17, 2026
+**Last updated:** April 30, 2026
 
 Profilissimo is a Chrome extension that lets you open tabs and links in different Chrome profiles. This policy explains what data the extension accesses, stores, and does not collect.
 
@@ -12,9 +12,11 @@ Profilissimo is a Chrome extension that lets you open tabs and links in differen
 
 - **Current tab URL** — When you transfer a tab, Profilissimo reads the URL of the active tab to open it in the target profile. The URL is passed to the local helper app and is never sent to any external server.
 
+- **Top-frame navigation URLs (URL pinning, off by default)** — If you enable the optional "Auto-redirect pinned URLs" feature in Settings, Profilissimo observes the hostname of top-frame navigations to check whether it matches one of your pinned rules. Matching is performed locally in the extension's service worker against your locally-stored rules; URLs are never logged or transmitted. The feature is off by default and can be disabled at any time. Pinned-rule matching does not run when the feature is off.
+
 ## What data is stored
 
-- **User preferences** — Your settings (default profile, close-source-tab toggle) are stored in a local config file (`~/.profilissimo/config.json`) on your computer. This file is shared across all Chrome profiles and is never transmitted anywhere.
+- **User preferences** — Your settings (default profile, close-source-tab toggle, URL pinning toggle, and pinned-rule list) are stored in a local config file (`~/.profilissimo/config.json`) on your computer. This file is shared across all Chrome profiles and is never transmitted anywhere.
 
 - **Cached profile list** — The list of Chrome profiles is cached in `chrome.storage.local` (device-only, not synced) so the popup can load quickly.
 
@@ -38,6 +40,7 @@ All functionality runs entirely on your local machine. The extension communicate
 | `nativeMessaging` | Communicate with the local helper app |
 | `storage` | Save your preferences |
 | `tabs` | Read the current tab's URL for transfer |
+| `webNavigation` | Detect top-frame navigations to match against pinned-URL rules (only when URL pinning is enabled in Settings) |
 
 ## Contact
 

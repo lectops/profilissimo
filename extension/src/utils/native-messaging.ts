@@ -1,4 +1,4 @@
-import type { NMHRequest, NMHResponse } from "../types/messages.js";
+import type { AppConfig, NMHRequest, NMHResponse, PinnedRule } from "../types/messages.js";
 
 const NMH_NAME = "com.profilissimo.nmh";
 const NMH_TIMEOUT_MS = 15_000;
@@ -72,11 +72,23 @@ export async function openProfile(targetProfile: string): Promise<NMHResponse> {
   return sendNativeMessage({ action: "open_profile", targetProfile });
 }
 
-export async function getConfig(): Promise<{ defaultProfile: string | null; closeSourceTab: boolean }> {
+const DEFAULT_CONFIG: AppConfig = {
+  defaultProfile: null,
+  closeSourceTab: false,
+  urlPinningEnabled: false,
+  pinnedRules: [],
+};
+
+export async function getConfig(): Promise<AppConfig> {
   const response = await sendNativeMessage({ action: "get_config" });
-  return response.config ?? { defaultProfile: null, closeSourceTab: false };
+  return response.config ?? { ...DEFAULT_CONFIG, pinnedRules: [] };
 }
 
-export async function setConfig(updates: { defaultProfile?: string | null; closeSourceTab?: boolean }): Promise<void> {
+export async function setConfig(updates: {
+  defaultProfile?: string | null;
+  closeSourceTab?: boolean;
+  urlPinningEnabled?: boolean;
+  pinnedRules?: PinnedRule[];
+}): Promise<void> {
   await sendNativeMessage({ action: "set_config", ...updates });
 }
