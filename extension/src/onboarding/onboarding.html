@@ -8,10 +8,11 @@
 </head>
 <body>
   <div class="container">
-    <header class="hero">
-      <img src="../../public/icons/p-logo.png" alt="" width="72" height="72" class="logo">
-      <h1>Welcome to Profilissimo</h1>
-      <p class="subtitle">Open tabs in any Chrome profile with one click.</p>
+    <header id="hero" class="hero hero-large">
+      <img src="../../public/icons/p-logo.png" alt="" class="logo">
+      <h1 id="hero-title">Welcome to Profilissimo</h1>
+      <p id="hero-subtitle" class="subtitle">Open tabs in any Chrome profile with one click.</p>
+      <span id="connected-pill" class="connected-pill hidden">&#10003; Helper app connected</span>
     </header>
 
     <div class="card">
@@ -57,18 +58,31 @@
         </div>
       </div>
 
-      <div id="success-section" class="hidden">
+      <!-- Branch A: zero or one Chrome profile total. Pure celebration. -->
+      <div id="success-done" class="hidden">
         <div class="success-content">
           <div class="success-icon">&#10003;</div>
           <h2>You're all set!</h2>
-          <p class="step-desc">Profilissimo is connected and ready to use. Click the extension icon in your toolbar to transfer tabs between profiles.</p>
+          <p class="step-desc">Profilissimo is connected and ready to use.</p>
           <button id="done-btn" class="btn-primary">Get Started</button>
+        </div>
+      </div>
+
+      <!-- Branch B: one or more other profiles. Step 4 framing. -->
+      <div id="success-multi" class="hidden">
+        <h2 class="multi-step-title">One last step &mdash; add Profilissimo to your other profiles</h2>
+        <p class="multi-step-desc">Chrome won't let an extension install itself in other profiles &mdash; but Profilissimo can open the Web Store in each of your other profiles in one go. You'll just click <strong>Add to Chrome</strong> in each window.</p>
+        <ul id="profile-install-list" class="profile-install-list"></ul>
+        <button id="install-all-btn" class="btn-primary install-all-btn">Open Web Store in all other profiles</button>
+        <p id="install-status" class="install-status hidden"></p>
+        <div class="multi-step-footer">
+          <a href="#" id="skip-link" class="skip-link">Get started &rarr;</a>
         </div>
       </div>
     </div>
 
     <div class="tip-card">
-      <strong>Tip:</strong> Install this extension in every Chrome profile you want to transfer tabs <em>from</em>. The helper app only needs to be installed once.
+      <strong>Tip:</strong> The helper app only needs to be installed once &mdash; it works across every Chrome profile on this Mac.
     </div>
   </div>
 

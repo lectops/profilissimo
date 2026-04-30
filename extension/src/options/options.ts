@@ -1,6 +1,13 @@
 import { $ } from "../utils/dom.js";
 import { profileLabel } from "../utils/format.js";
 import { INSTALL_COMMAND, UNINSTALL_COMMAND } from "../utils/constants.js";
+import {
+  fetchInstallableProfiles,
+  renderInstallList,
+  openInAllProfiles,
+  summarizeCascade,
+  type RowEntry,
+} from "../utils/multi-profile-install.js";
 
 const defaultProfileSelect = $("default-profile") as HTMLSelectElement;
 const closeSourceTab = $("close-source-tab") as HTMLInputElement;
@@ -11,6 +18,12 @@ const nmhText = $("nmh-text") as HTMLSpanElement;
 const nmhVersion = $("nmh-version") as HTMLDivElement;
 const nmhAction = $("nmh-action") as HTMLDivElement;
 const saveStatusEl = $("save-status") as HTMLDivElement;
+const otherProfilesSection = $("other-profiles-section");
+const installList = $("profile-install-list") as HTMLUListElement;
+const installAllBtn = $("install-all-btn") as HTMLButtonElement;
+const installStatus = $("install-status");
+
+let multiEntries: RowEntry[] = [];
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -140,7 +153,47 @@ async function init(): Promise<void> {
   nmhText.textContent = connected ? "Connected" : "Not connected";
   nmhVersion.textContent = version ? `v${version}` : "";
   renderNmhAction(connected);
+
+  if (connected) {
+    await initOtherProfilesSection();
+  }
 }
+
+async function initOtherProfilesSection(): Promise<void> {
+  const result = await fetchInstallableProfiles();
+  if (!result || result.installable.length === 0) return;
+
+  multiEntries = renderInstallList({
+    container: installList,
+    installable: result.installable,
+    current: result.current,
+  });
+
+  installAllBtn.textContent =
+    result.installable.length === 1
+      ? "Open Web Store in 1 other profile"
+      : `Open Web Store in ${result.installable.length} other profiles`;
+
+  otherProfilesSection.classList.remove("hidden");
+}
+
+installAllBtn.addEventListener("click", async () => {
+  if (multiEntries.length === 0) return;
+
+  installAllBtn.disabled = true;
+  installAllBtn.textContent = "Opening…";
+  installStatus.classList.add("hidden");
+  installStatus.className = "install-status";
+
+  const result = await openInAllProfiles(multiEntries);
+  const summary = summarizeCascade(result);
+
+  installStatus.classList.remove("hidden");
+  installStatus.classList.add(summary.tone);
+  installStatus.textContent = summary.text;
+  installAllBtn.textContent = summary.buttonLabel;
+  installAllBtn.disabled = false;
+});
 
 // Open chrome://extensions/shortcuts
 shortcutLink.addEventListener("click", (e) => {
