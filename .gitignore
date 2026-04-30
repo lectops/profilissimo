@@ -5,6 +5,7 @@ build/
 *.tsbuildinfo
 .env
 .DS_Store
+.playwright-mcp/
 native-host/bin/
 native-host/profilissimo-nmh.sh
 *.zip
