@@ -9,6 +9,13 @@ Update this file in the same PR as the change, not at release time.
 
 ## [Unreleased]
 
+### Added
+- Onboarding now leads with a prominent "One last step — add Profilissimo to your other profiles" view after the helper app is verified, with a single button that opens the Web Store in every other Chrome profile so the user can add the extension to each one without context-switching.
+- Settings page has a new "Other profiles" section providing the same one-click install flow for users who skipped it during onboarding.
+
+### Changed
+- Onboarding hero shrinks (smaller logo, no celebration badge) when there are still profiles to install in, so the remaining step reads as the primary task instead of a footnote. The "You're all set!" celebration is preserved for users with only one Chrome profile.
+
 ## [1.0.0] - 2026-03-17
 
 Initial release on the Chrome Web Store.

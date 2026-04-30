@@ -17,28 +17,76 @@ body {
   margin: 0 auto;
 }
 
+/* --- Hero (two sizes) --- */
+
 .hero {
   text-align: center;
+  transition: margin 0.2s, padding 0.2s;
+}
+
+.hero.hero-large {
   margin-bottom: 32px;
 }
 
+.hero.hero-compact {
+  margin-bottom: 18px;
+}
+
 .logo {
-  margin-bottom: 20px;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.1));
 }
 
+.hero.hero-large .logo {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 20px;
+}
+
+.hero.hero-compact .logo {
+  width: 40px;
+  height: 40px;
+  margin-bottom: 10px;
+}
+
 h1 {
-  font-size: 26px;
   font-weight: 700;
   color: #202124;
-  margin-bottom: 8px;
   letter-spacing: -0.3px;
+}
+
+.hero.hero-large h1 {
+  font-size: 26px;
+  margin-bottom: 8px;
+}
+
+.hero.hero-compact h1 {
+  font-size: 18px;
+  margin-bottom: 6px;
 }
 
 .subtitle {
   font-size: 15px;
   color: #5f6368;
 }
+
+.hero.hero-compact .subtitle {
+  display: none;
+}
+
+.connected-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  background: #e6f4ea;
+  color: #137333;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* --- Card --- */
 
 .card {
   background: #fff;
@@ -206,6 +254,8 @@ kbd {
   background: #ea4335;
 }
 
+/* --- Branch A: pure success --- */
+
 .success-content {
   text-align: center;
   padding: 32px 0;
@@ -236,6 +286,150 @@ kbd {
   margin-left: auto;
   margin-right: auto;
 }
+
+/* --- Branch B: one last step / multi-profile --- */
+
+.multi-step-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #202124;
+  margin-bottom: 10px;
+  letter-spacing: -0.2px;
+}
+
+.multi-step-desc {
+  font-size: 13px;
+  color: #5f6368;
+  line-height: 1.6;
+  margin-bottom: 18px;
+}
+
+.profile-install-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 18px;
+  border: 1px solid #e8eaed;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.profile-install-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #f1f3f4;
+  font-size: 13px;
+}
+
+.profile-install-row:last-child {
+  border-bottom: none;
+}
+
+.profile-install-row.current {
+  background: #f8f9fa;
+  color: #5f6368;
+}
+
+.profile-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 12px;
+  color: #fff;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.profile-info-name {
+  font-weight: 500;
+  color: #202124;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-info-email {
+  font-size: 12px;
+  color: #5f6368;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-status {
+  font-size: 12px;
+  color: #5f6368;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.row-status.opening {
+  color: #1a73e8;
+}
+
+.row-status.opened {
+  color: #137333;
+}
+
+.row-status.failed {
+  color: #c5221f;
+}
+
+.install-all-btn {
+  width: 100%;
+  padding: 12px 28px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.install-status {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #5f6368;
+  line-height: 1.5;
+  text-align: center;
+}
+
+.install-status.success {
+  color: #137333;
+}
+
+.install-status.error {
+  color: #c5221f;
+}
+
+.multi-step-footer {
+  margin-top: 22px;
+  text-align: center;
+}
+
+.skip-link {
+  font-size: 13px;
+  color: #5f6368;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.skip-link:hover {
+  color: #1a73e8;
+  text-decoration: underline;
+}
+
+/* --- Tip card --- */
 
 .tip-card {
   margin-top: 16px;

@@ -210,3 +210,136 @@ a:hover {
 .hidden {
   display: none;
 }
+
+/* --- Multi-profile install --- */
+
+.btn-primary {
+  padding: 9px 20px;
+  background: #1a73e8;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+
+.btn-primary:hover {
+  background: #1765cc;
+  box-shadow: 0 1px 3px rgba(26, 115, 232, 0.3);
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: 2px;
+}
+
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.profile-install-list {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0;
+  border: 1px solid #e8eaed;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.profile-install-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f1f3f4;
+  font-size: 13px;
+}
+
+.profile-install-row:last-child {
+  border-bottom: none;
+}
+
+.profile-install-row.current {
+  background: #f8f9fa;
+  color: #5f6368;
+}
+
+.profile-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 11px;
+  color: #fff;
+}
+
+.profile-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.profile-info-name {
+  font-weight: 500;
+  color: #202124;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-info-email {
+  font-size: 11px;
+  color: #5f6368;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row-status {
+  font-size: 11px;
+  color: #5f6368;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.row-status.opening {
+  color: #1a73e8;
+}
+
+.row-status.opened {
+  color: #137333;
+}
+
+.row-status.failed {
+  color: #c5221f;
+}
+
+.install-all-btn {
+  width: 100%;
+}
+
+.install-status {
+  margin-top: 10px;
+  font-size: 12px;
+  color: #5f6368;
+  line-height: 1.5;
+}
+
+.install-status.success {
+  color: #137333;
+}
+
+.install-status.error {
+  color: #c5221f;
+}
