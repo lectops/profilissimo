@@ -37,6 +37,52 @@
 
     <section class="section">
       <div class="section-header">
+        <h2>Pinned URLs</h2>
+        <span class="scope-badge shared">Shared across profiles</span>
+      </div>
+      <p class="description">Auto-redirect specific sites to a designated profile. Matches the full hostname only.</p>
+
+      <label class="toggle-row">
+        <input type="checkbox" id="url-pinning-toggle">
+        <span>Auto-redirect pinned URLs</span>
+      </label>
+
+      <div id="pinning-disclosure" class="pinning-disclosure hidden">
+        Profilissimo will check the URLs you visit against your rules. Nothing leaves your machine.
+      </div>
+
+      <div id="pinning-body" class="pinning-body">
+        <table id="rules-table" class="rules-table hidden">
+          <thead>
+            <tr>
+              <th scope="col">Hostname</th>
+              <th scope="col">Profile</th>
+              <th scope="col" class="rules-actions-col"><span class="visually-hidden">Actions</span></th>
+            </tr>
+          </thead>
+          <tbody id="rules-tbody"></tbody>
+        </table>
+
+        <p id="rules-empty" class="rules-empty">No rules yet. Add one below or right-click a page and pick "Always open this site in…".</p>
+
+        <form id="add-rule-form" class="add-rule-form" novalidate>
+          <input
+            type="text"
+            id="add-rule-pattern"
+            placeholder="hostname (e.g. mail.google.com)"
+            autocomplete="off"
+            spellcheck="false">
+          <select id="add-rule-profile">
+            <option value="">Choose profile…</option>
+          </select>
+          <button type="submit" id="add-rule-btn" class="btn-primary">Add</button>
+        </form>
+        <p id="add-rule-error" class="add-rule-error hidden"></p>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-header">
         <h2>Keyboard Shortcut</h2>
         <span class="scope-badge per-profile">Per profile</span>
       </div>

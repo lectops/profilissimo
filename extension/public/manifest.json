@@ -9,7 +9,8 @@
     "identity.email",
     "nativeMessaging",
     "storage",
-    "tabs"
+    "tabs",
+    "webNavigation"
   ],
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'self'"

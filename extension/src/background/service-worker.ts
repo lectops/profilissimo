@@ -1,4 +1,4 @@
-import type { ProfileInfo } from "../types/messages.js";
+import type { PinnedRule, ProfileInfo } from "../types/messages.js";
 import { profileLabel, errorMessage } from "../utils/format.js";
 import { healthCheck, openUrlInProfile, openProfile, getConfig, setConfig } from "../utils/native-messaging.js";
 import { isTransferableUrl } from "../utils/url.js";
@@ -6,6 +6,9 @@ import { getProfiles, clearProfileCache } from "../utils/profiles.js";
 import { getLastUsedProfile, setLastUsedProfile } from "../utils/storage.js";
 import { isAtLeast } from "../utils/version.js";
 import { REQUIRED_NMH_VERSION } from "../utils/constants.js";
+import { findMatchingRule, isValidPattern, hostnameFromUrl } from "../utils/pin-matcher.js";
+import { getCurrentProfileDirectory, refreshCurrentProfileDirectory } from "../utils/profile-identity.js";
+import { uuid } from "../utils/uuid.js";
 
 self.addEventListener("unhandledrejection", (event) => {
   console.error("Profilissimo: unhandled rejection", event.reason);
@@ -19,6 +22,27 @@ async function getCurrentProfileEmail(): Promise<string | null> {
     return info.email || null;
   } catch {
     return null;
+  }
+}
+
+// --- URL pinning state ---
+//
+// Cached in module memory to keep onBeforeNavigate fast. `pinningEnabled` and
+// `pinnedRules` mirror NMH config; refreshed on init, after set_config from
+// Settings, and lazily if a navigation fires while we're cold (handled by
+// init's awaited refresh — the listener no-ops until both are populated).
+
+let pinningEnabled = false;
+let pinnedRules: PinnedRule[] = [];
+
+async function refreshPinningState(): Promise<void> {
+  try {
+    const config = await getConfig();
+    pinningEnabled = config.urlPinningEnabled === true;
+    pinnedRules = Array.isArray(config.pinnedRules) ? config.pinnedRules : [];
+  } catch {
+    pinningEnabled = false;
+    pinnedRules = [];
   }
 }
 
@@ -93,6 +117,30 @@ async function buildContextMenus(): Promise<void> {
         title: label,
         contexts: ["link"],
         enabled: !isCurrent,
+      });
+    }
+  }
+
+  // "Always open this site in\u2026" submenu \u2014 hidden when URL pinning is off,
+  // because clicking it would have no effect (avoids the discoverable-but-
+  // disabled anti-pattern).
+  if (pinningEnabled && profiles.length >= 1) {
+    chrome.contextMenus.create({
+      id: "pin_parent",
+      title: "Always open this site in\u2026",
+      contexts: ["page"],
+      // documentUrlPatterns avoids showing this on chrome:// or other internal
+      // pages where there's no pinnable hostname.
+      documentUrlPatterns: ["http://*/*", "https://*/*"],
+    });
+
+    for (const profile of profiles) {
+      chrome.contextMenus.create({
+        id: `pin:${profile.directory}`,
+        parentId: "pin_parent",
+        title: profileLabel(profile),
+        contexts: ["page"],
+        documentUrlPatterns: ["http://*/*", "https://*/*"],
       });
     }
   }
@@ -210,6 +258,41 @@ async function handleGetProfiles(forceRefresh?: boolean): Promise<ProfilesResult
   }
 }
 
+// --- URL pinning auto-redirect ---
+//
+// onBeforeNavigate fires synchronously before any network request, so there's
+// no flash of wrong-profile content. We intentionally don't BLOCK the
+// navigation (would require webRequestBlocking permission, much heavier);
+// instead we let it proceed in the source tab while opening the URL in the
+// target profile and closing the source tab.
+
+chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
+  if (details.frameId !== 0) return;        // top-frame only — skip iframes
+  if (!pinningEnabled) return;
+  if (pinnedRules.length === 0) return;
+
+  const rule = findMatchingRule(details.url, pinnedRules);
+  if (!rule) return;
+
+  // Loop guard: if we're already in the target profile, don't redirect.
+  // Skip defensively when the current directory is unknown — better to miss
+  // a redirect than to create an infinite loop.
+  const currentDir = await getCurrentProfileDirectory();
+  if (!currentDir) return;
+  if (currentDir === rule.targetProfileDirectory) return;
+
+  if (!nmhSupportsExtendedTransfer) return;
+
+  try {
+    const response = await openUrlInProfile(details.url, rule.targetProfileDirectory);
+    if (response.success) {
+      await safeCloseTab(details.tabId);
+    }
+  } catch (err) {
+    console.error("Profilissimo: pinned redirect failed", err);
+  }
+});
+
 // --- Initialization ---
 
 // Runs on every service worker start (install, Chrome launch, AND wake-from-idle).
@@ -219,6 +302,10 @@ void (async () => {
   try {
     const health = await refreshNmhCapabilities();
     if (health.connected) {
+      await refreshPinningState();
+      // Resolve the current profile directory eagerly so the first
+      // onBeforeNavigate firing doesn't have to wait on NMH.
+      void getCurrentProfileDirectory();
       await buildContextMenus();
     }
   } catch (err) {
@@ -235,8 +322,8 @@ chrome.runtime.onInstalled.addListener((details) => {
 chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const menuItemId = String(info.menuItemId);
 
-  // Extract prefix ("page" or "link") and profile directory from menu ID.
-  // Directory is everything after the first ":", which is safe because
+  // Extract prefix ("page", "link", or "pin") and profile directory from menu
+  // ID. Directory is everything after the first ":", which is safe because
   // directories are validated against /^[a-zA-Z0-9 _-]+$/ (no colons).
   const colonIndex = menuItemId.indexOf(":");
   if (colonIndex === -1) return;
@@ -244,7 +331,15 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   const prefix = menuItemId.slice(0, colonIndex);
   const profileDir = menuItemId.slice(colonIndex + 1);
 
-  if ((prefix !== "page" && prefix !== "link") || !profileDir) return;
+  if (!profileDir) return;
+
+  if (prefix === "pin") {
+    if (!tab?.url) return;
+    await handleAddPinFromContextMenu(tab.url, profileDir);
+    return;
+  }
+
+  if (prefix !== "page" && prefix !== "link") return;
 
   const url = prefix === "link" ? info.linkUrl : tab?.url;
   if (!url) return;
@@ -256,6 +351,34 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
     console.error("Profilissimo: context menu transfer failed", result.error);
   }
 });
+
+async function handleAddPinFromContextMenu(pageUrl: string, profileDir: string): Promise<void> {
+  const hostname = hostnameFromUrl(pageUrl);
+  if (!hostname || !isValidPattern(hostname)) {
+    console.warn("Profilissimo: cannot pin non-hostname URL", pageUrl);
+    return;
+  }
+
+  // Replace any existing rule with the same pattern so a second click on a
+  // different profile updates the target instead of creating a duplicate.
+  const filtered = pinnedRules.filter((r) => r.pattern !== hostname);
+  const updated: PinnedRule[] = [
+    ...filtered,
+    {
+      id: uuid(),
+      pattern: hostname,
+      targetProfileDirectory: profileDir,
+      createdAt: Date.now(),
+    },
+  ];
+
+  try {
+    await setConfig({ pinnedRules: updated });
+    pinnedRules = updated;
+  } catch (err) {
+    console.error("Profilissimo: failed to save pinned rule", err);
+  }
+}
 
 chrome.commands.onCommand.addListener(async (command) => {
   if (command !== "transfer-to-default") return;
@@ -317,6 +440,8 @@ interface SetConfigMessage {
   type: "set_config";
   defaultProfile?: string | null;
   closeSourceTab?: boolean;
+  urlPinningEnabled?: boolean;
+  pinnedRules?: PinnedRule[];
 }
 
 type ExtensionMessage = TransferMessage | GetProfilesMessage | HealthCheckMessage | RefreshMenusMessage | GetConfigMessage | SetConfigMessage;
@@ -333,7 +458,9 @@ function isValidMessage(message: unknown): message is ExtensionMessage {
       return msg.forceRefresh === undefined || typeof msg.forceRefresh === "boolean";
     case "set_config":
       return (msg.defaultProfile === undefined || msg.defaultProfile === null || typeof msg.defaultProfile === "string") &&
-        (msg.closeSourceTab === undefined || typeof msg.closeSourceTab === "boolean");
+        (msg.closeSourceTab === undefined || typeof msg.closeSourceTab === "boolean") &&
+        (msg.urlPinningEnabled === undefined || typeof msg.urlPinningEnabled === "boolean") &&
+        (msg.pinnedRules === undefined || Array.isArray(msg.pinnedRules));
     case "health_check":
     case "refresh_menus":
     case "get_config":
@@ -368,9 +495,15 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
 
     case "refresh_menus":
       clearProfileCache();
-      buildContextMenus()
-        .then(() => sendResponse({ success: true }))
-        .catch(() => sendResponse({ success: false, error: "Failed to refresh menus" }));
+      (async () => {
+        try {
+          await refreshCurrentProfileDirectory();
+          await buildContextMenus();
+          sendResponse({ success: true });
+        } catch {
+          sendResponse({ success: false, error: "Failed to refresh menus" });
+        }
+      })();
       return true;
 
     case "get_config":
@@ -380,9 +513,22 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
       return true;
 
     case "set_config":
-      setConfig(message)
-        .then(() => sendResponse({ success: true }))
-        .catch(() => sendResponse({ success: false, error: "Failed to save config" }));
+      (async () => {
+        try {
+          await setConfig(message);
+          const pinningTouched =
+            message.urlPinningEnabled !== undefined || message.pinnedRules !== undefined;
+          if (pinningTouched) {
+            await refreshPinningState();
+            // Rebuild context menus so the "Always open this site in…"
+            // submenu appears/disappears in sync with the toggle.
+            await buildContextMenus();
+          }
+          sendResponse({ success: true });
+        } catch {
+          sendResponse({ success: false, error: "Failed to save config" });
+        }
+      })();
       return true;
   }
 });

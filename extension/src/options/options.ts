@@ -2,6 +2,9 @@ import { $ } from "../utils/dom.js";
 import { profileLabel } from "../utils/format.js";
 import { INSTALL_COMMAND, UNINSTALL_COMMAND, REQUIRED_NMH_VERSION } from "../utils/constants.js";
 import { isAtLeast } from "../utils/version.js";
+import { isValidPattern } from "../utils/pin-matcher.js";
+import { uuid } from "../utils/uuid.js";
+import type { PinnedRule, ProfileInfo } from "../types/messages.js";
 import {
   fetchInstallableProfiles,
   renderInstallList,
@@ -9,6 +12,8 @@ import {
   summarizeCascade,
   type RowEntry,
 } from "../utils/multi-profile-install.js";
+
+const PINNING_DISCLOSURE_SEEN_KEY = "urlPinningDisclosureSeen";
 
 const defaultProfileSelect = $("default-profile") as HTMLSelectElement;
 const closeSourceTab = $("close-source-tab") as HTMLInputElement;
@@ -24,7 +29,21 @@ const installList = $("profile-install-list") as HTMLUListElement;
 const installAllBtn = $("install-all-btn") as HTMLButtonElement;
 const installStatus = $("install-status");
 
+const pinningToggle = $("url-pinning-toggle") as HTMLInputElement;
+const pinningDisclosure = $("pinning-disclosure") as HTMLDivElement;
+const pinningBody = $("pinning-body") as HTMLDivElement;
+const rulesTable = $("rules-table") as HTMLTableElement;
+const rulesTbody = $("rules-tbody") as HTMLTableSectionElement;
+const rulesEmpty = $("rules-empty") as HTMLParagraphElement;
+const addRuleForm = $("add-rule-form") as HTMLFormElement;
+const addRulePattern = $("add-rule-pattern") as HTMLInputElement;
+const addRuleProfile = $("add-rule-profile") as HTMLSelectElement;
+const addRuleBtn = $("add-rule-btn") as HTMLButtonElement;
+const addRuleError = $("add-rule-error") as HTMLParagraphElement;
+
 let multiEntries: RowEntry[] = [];
+let pinnedRulesState: PinnedRule[] = [];
+let allProfiles: ProfileInfo[] = [];
 
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 
@@ -34,7 +53,12 @@ function showSaved(): void {
   saveTimeout = setTimeout(() => saveStatusEl.classList.add("hidden"), 1500);
 }
 
-async function saveConfig(updates: { defaultProfile?: string | null; closeSourceTab?: boolean }): Promise<void> {
+async function saveConfig(updates: {
+  defaultProfile?: string | null;
+  closeSourceTab?: boolean;
+  urlPinningEnabled?: boolean;
+  pinnedRules?: PinnedRule[];
+}): Promise<void> {
   try {
     const response = await chrome.runtime.sendMessage({ type: "set_config", ...updates });
     if (response?.success) {
@@ -105,6 +129,148 @@ function renderNmhAction(state: NmhState): void {
   nmhAction.appendChild(hint);
 }
 
+function profileLabelByDirectory(directory: string): string {
+  const match = allProfiles.find((p) => p.directory === directory);
+  return match ? profileLabel(match) : directory;
+}
+
+function renderRulesTable(): void {
+  rulesTbody.replaceChildren();
+  const sorted = [...pinnedRulesState].sort((a, b) => a.createdAt - b.createdAt);
+
+  if (sorted.length === 0) {
+    rulesTable.classList.add("hidden");
+    rulesEmpty.classList.remove("hidden");
+    return;
+  }
+
+  rulesTable.classList.remove("hidden");
+  rulesEmpty.classList.add("hidden");
+
+  for (const rule of sorted) {
+    const tr = document.createElement("tr");
+
+    const tdPattern = document.createElement("td");
+    tdPattern.textContent = rule.pattern;
+    tdPattern.className = "rules-pattern";
+    tr.appendChild(tdPattern);
+
+    const tdTarget = document.createElement("td");
+    tdTarget.textContent = profileLabelByDirectory(rule.targetProfileDirectory);
+    tr.appendChild(tdTarget);
+
+    const tdActions = document.createElement("td");
+    tdActions.className = "rules-actions-col";
+    const removeBtn = document.createElement("button");
+    removeBtn.type = "button";
+    removeBtn.className = "rule-remove-btn";
+    removeBtn.textContent = "Remove";
+    removeBtn.setAttribute("aria-label", `Remove rule for ${rule.pattern}`);
+    removeBtn.addEventListener("click", () => void removeRule(rule.id));
+    tdActions.appendChild(removeBtn);
+    tr.appendChild(tdActions);
+
+    rulesTbody.appendChild(tr);
+  }
+}
+
+function refreshAddRuleProfileOptions(): void {
+  // Keep the placeholder, replace the rest.
+  while (addRuleProfile.options.length > 1) addRuleProfile.remove(1);
+  for (const profile of allProfiles) {
+    const option = document.createElement("option");
+    option.value = profile.directory;
+    option.textContent = profileLabel(profile);
+    addRuleProfile.appendChild(option);
+  }
+}
+
+function applyPinningEnabledState(enabled: boolean): void {
+  pinningBody.classList.toggle("disabled", !enabled);
+  // When disabled, controls remain visible (so users can still manage rules
+  // without flipping the toggle just to look) but interactions are inert.
+  addRulePattern.disabled = !enabled;
+  addRuleProfile.disabled = !enabled;
+  addRuleBtn.disabled = !enabled;
+  for (const btn of rulesTbody.querySelectorAll<HTMLButtonElement>(".rule-remove-btn")) {
+    btn.disabled = !enabled;
+  }
+}
+
+async function showFirstTimeDisclosureIfNeeded(): Promise<void> {
+  const result = await chrome.storage.local.get({ [PINNING_DISCLOSURE_SEEN_KEY]: false });
+  if (result[PINNING_DISCLOSURE_SEEN_KEY]) return;
+  pinningDisclosure.classList.remove("hidden");
+  await chrome.storage.local.set({ [PINNING_DISCLOSURE_SEEN_KEY]: true });
+}
+
+async function removeRule(id: string): Promise<void> {
+  pinnedRulesState = pinnedRulesState.filter((r) => r.id !== id);
+  renderRulesTable();
+  applyPinningEnabledState(pinningToggle.checked);
+  await saveConfig({ pinnedRules: pinnedRulesState });
+}
+
+function showAddRuleError(message: string): void {
+  addRuleError.textContent = message;
+  addRuleError.classList.remove("hidden");
+}
+
+function clearAddRuleError(): void {
+  addRuleError.textContent = "";
+  addRuleError.classList.add("hidden");
+}
+
+async function handleAddRule(event: Event): Promise<void> {
+  event.preventDefault();
+  clearAddRuleError();
+
+  const pattern = addRulePattern.value.trim().toLowerCase();
+  const targetDir = addRuleProfile.value;
+
+  if (!pattern) {
+    showAddRuleError("Hostname is required.");
+    return;
+  }
+  if (!isValidPattern(pattern)) {
+    showAddRuleError("Hostname must be a plain domain (no scheme, path, or special characters).");
+    return;
+  }
+  if (!targetDir) {
+    showAddRuleError("Choose a profile.");
+    return;
+  }
+  if (pinnedRulesState.some((r) => r.pattern === pattern)) {
+    showAddRuleError(`A rule for ${pattern} already exists. Remove it first.`);
+    return;
+  }
+
+  pinnedRulesState = [
+    ...pinnedRulesState,
+    {
+      id: uuid(),
+      pattern,
+      targetProfileDirectory: targetDir,
+      createdAt: Date.now(),
+    },
+  ];
+
+  addRulePattern.value = "";
+  addRuleProfile.value = "";
+  renderRulesTable();
+  applyPinningEnabledState(pinningToggle.checked);
+  await saveConfig({ pinnedRules: pinnedRulesState });
+}
+
+async function handlePinningToggleChange(): Promise<void> {
+  const enabled = pinningToggle.checked;
+  applyPinningEnabledState(enabled);
+  if (enabled) {
+    await showFirstTimeDisclosureIfNeeded();
+  }
+  await saveConfig({ urlPinningEnabled: enabled });
+}
+
 async function init(): Promise<void> {
   // Load profiles for the default profile dropdown
   try {
@@ -114,13 +280,14 @@ async function init(): Promise<void> {
     });
 
     if (response?.success && response.profiles) {
-      const profiles = response.profiles;
-      for (const profile of profiles) {
+      allProfiles = response.profiles;
+      for (const profile of allProfiles) {
         const option = document.createElement("option");
         option.value = profile.directory;
         option.textContent = profileLabel(profile);
         defaultProfileSelect.appendChild(option);
       }
+      refreshAddRuleProfileOptions();
     }
   } catch (err) {
     console.warn("Profilissimo: failed to load profiles", err);
@@ -138,10 +305,17 @@ async function init(): Promise<void> {
         }
       }
       closeSourceTab.checked = configResponse.config.closeSourceTab ?? false;
+      pinningToggle.checked = configResponse.config.urlPinningEnabled === true;
+      pinnedRulesState = Array.isArray(configResponse.config.pinnedRules)
+        ? configResponse.config.pinnedRules
+        : [];
     }
   } catch {
     // NMH config not available
   }
+
+  renderRulesTable();
+  applyPinningEnabledState(pinningToggle.checked);
 
   // Load actual keyboard shortcut from Chrome
   try {
@@ -232,5 +406,9 @@ shortcutLink.addEventListener("click", (e) => {
 // Auto-save on change
 defaultProfileSelect.addEventListener("change", () => void saveConfig({ defaultProfile: defaultProfileSelect.value || null }));
 closeSourceTab.addEventListener("change", () => void saveConfig({ closeSourceTab: closeSourceTab.checked }));
+
+pinningToggle.addEventListener("change", () => void handlePinningToggleChange());
+addRuleForm.addEventListener("submit", (event) => void handleAddRule(event));
+addRulePattern.addEventListener("input", clearAddRuleError);
 
 void init();

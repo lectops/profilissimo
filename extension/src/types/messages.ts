@@ -21,10 +21,19 @@ interface GetConfigRequest {
   action: "get_config";
 }
 
+export interface PinnedRule {
+  id: string;
+  pattern: string;
+  targetProfileDirectory: string;
+  createdAt: number;
+}
+
 interface SetConfigRequest {
   action: "set_config";
   defaultProfile?: string | null;
   closeSourceTab?: boolean;
+  urlPinningEnabled?: boolean;
+  pinnedRules?: PinnedRule[];
 }
 
 export type NMHRequest =
@@ -42,10 +51,17 @@ export interface ProfileInfo {
   avatar?: string;
 }
 
+export interface AppConfig {
+  defaultProfile: string | null;
+  closeSourceTab: boolean;
+  urlPinningEnabled: boolean;
+  pinnedRules: PinnedRule[];
+}
+
 export interface NMHResponse {
   success: boolean;
   error?: string;
   version?: string;
   profiles?: ProfileInfo[];
-  config?: { defaultProfile: string | null; closeSourceTab: boolean };
+  config?: AppConfig;
 }
