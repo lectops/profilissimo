@@ -189,6 +189,18 @@ a:hover {
   color: #202124;
 }
 
+.helper-download-link {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: #5f6368;
+  text-decoration: underline;
+}
+
+.helper-download-link:hover {
+  color: #1a73e8;
+}
+
 .info-section {
   padding-top: 14px;
   padding-bottom: 0;
@@ -360,6 +372,22 @@ a:hover {
   line-height: 1.5;
 }
 
+.pinning-needs-update {
+  margin-top: 8px;
+  padding: 10px 12px;
+  background: #fef7e0;
+  color: #8a6116;
+  border-radius: 8px;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.pinning-needs-update a {
+  color: #8a6116;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
 .pinning-body {
   margin-top: 12px;
   transition: opacity 0.15s;
@@ -405,6 +433,11 @@ a:hover {
 .rules-actions-col {
   width: 1%;
   white-space: nowrap;
+}
+
+.rules-target-unavailable {
+  color: #c5221f;
+  font-style: italic;
 }
 
 .rule-remove-btn {

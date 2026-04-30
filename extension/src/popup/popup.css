@@ -225,6 +225,105 @@ body {
   outline-offset: 1px;
 }
 
+.pin-section {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #e8eaed;
+}
+
+.pin-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #5f6368;
+  text-align: left;
+  font-family: inherit;
+  transition: background 0.15s, color 0.15s;
+}
+
+.pin-toggle:hover {
+  background: #f1f3f4;
+  color: #202124;
+}
+
+.pin-toggle:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: -2px;
+}
+
+.pin-icon {
+  font-size: 12px;
+  flex-shrink: 0;
+}
+
+.pin-picker {
+  margin-top: 4px;
+  padding: 8px 10px 4px;
+  background: #f8f9fa;
+  border-radius: 6px;
+}
+
+.pin-picker-prompt {
+  font-size: 11px;
+  color: #5f6368;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+.pin-hostname {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: #202124;
+  font-weight: 500;
+}
+
+.pin-profile-list {
+  list-style: none;
+}
+
+.pin-profile-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  color: #202124;
+  transition: background 0.15s;
+}
+
+.pin-profile-item:hover {
+  background: #fff;
+}
+
+.pin-profile-item:focus-visible {
+  outline: 2px solid #1a73e8;
+  outline-offset: -2px;
+}
+
+.pin-profile-check {
+  color: #137333;
+  font-weight: 600;
+}
+
+.pin-profile-remove {
+  margin-top: 4px;
+  border-top: 1px solid #e8eaed;
+  padding-top: 8px;
+  color: #c5221f;
+}
+
+.pin-profile-remove:hover {
+  background: #fce8e6;
+}
+
 .hidden {
   display: none !important;
 }

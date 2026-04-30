@@ -8,6 +8,7 @@
     "identity",
     "identity.email",
     "nativeMessaging",
+    "notifications",
     "storage",
     "tabs",
     "webNavigation"

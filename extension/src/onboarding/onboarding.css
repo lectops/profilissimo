@@ -445,6 +445,36 @@ kbd {
   font-weight: 600;
 }
 
+.pinning-callout {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: #f1f3f4;
+  border-radius: 8px;
+  font-size: 12px;
+  color: #5f6368;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.pinning-callout strong {
+  color: #1a56c4;
+  font-weight: 600;
+}
+
+.pinning-callout em {
+  font-style: normal;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 11px;
+  background: #e8eaed;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.success-content .pinning-callout {
+  margin-top: 18px;
+  text-align: center;
+}
+
 .hidden {
   display: none !important;
 }

@@ -1,4 +1,5 @@
 import { $ } from "../utils/dom.js";
+import { NMH_RELEASE_PAGE_URL } from "../utils/constants.js";
 import {
   fetchInstallableProfiles,
   renderInstallList,
@@ -22,6 +23,9 @@ const installList = $("profile-install-list") as HTMLUListElement;
 const installAllBtn = $("install-all-btn") as HTMLButtonElement;
 const installStatus = $("install-status");
 const skipLink = $("skip-link") as HTMLAnchorElement;
+const manualDownloadLink = $("manual-download-link") as HTMLAnchorElement;
+
+manualDownloadLink.href = NMH_RELEASE_PAGE_URL;
 
 let multiEntries: RowEntry[] = [];
 
