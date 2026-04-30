@@ -81,18 +81,13 @@ async function transferToProfile(profile: ProfileInfo): Promise<void> {
   transferring = true;
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.url) {
-    transferring = false;
-    showStatus("No URL to transfer", "error");
-    return;
-  }
 
   try {
     const response = await chrome.runtime.sendMessage({
       type: "transfer",
-      url: tab.url,
+      url: tab?.url,
       targetProfile: profile.directory,
-      sourceTabId: tab.id,
+      sourceTabId: tab?.id,
     });
 
     if (response?.success) {

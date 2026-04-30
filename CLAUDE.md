@@ -78,7 +78,7 @@ Key utils: `native-messaging.ts` (NMH communication with 15s timeout), `storage.
 
 Compiled to a standalone binary with Bun. Entry point: `src/main.ts` (stdin/stdout message loop).
 
-- `schema.ts`: Validates request/response types. Request actions: `open_url`, `list_profiles`, `health_check`, `get_config`, `set_config`.
+- `schema.ts`: Validates request/response types. Request actions: `open_url`, `open_profile`, `list_profiles`, `health_check`, `get_config`, `set_config`.
 - `profiles.ts`: Discovers Chrome profiles from the `Local State` JSON file.
 - `launcher.ts`: Spawns Chrome with profile directory flag. Supports macOS, Linux, Windows paths.
 - `config.ts`: Reads/writes user config at `~/.profilissimo/config.json`.
@@ -90,9 +90,10 @@ Defined in `extension/src/types/messages.ts`. The NMH request is a discriminated
 ## Security Constraints
 
 All inputs are validated in both the extension and the NMH:
-- Only `http:` and `https:` URLs are accepted
+- URL schemes use a blocklist (`javascript:` rejected) — any other navigable Chrome scheme passes through. The argv-injection defense is the actual security boundary, not the scheme allowlist.
 - Profile directory names must match `/^[a-zA-Z0-9 _-]+$/`
-- URLs starting with `-` are rejected (prevents CLI flag injection)
+- URLs starting with `-` are rejected (CLI flag injection); URLs containing `\0`, `\r`, `\n` are rejected (argv tampering)
+- Chrome is invoked with `--` as an argv terminator before the URL
 
 ## Platform Support
 

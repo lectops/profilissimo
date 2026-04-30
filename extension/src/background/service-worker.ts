@@ -1,9 +1,11 @@
 import type { ProfileInfo } from "../types/messages.js";
 import { profileLabel, errorMessage } from "../utils/format.js";
-import { healthCheck, openUrlInProfile, getConfig, setConfig } from "../utils/native-messaging.js";
+import { healthCheck, openUrlInProfile, openProfile, getConfig, setConfig } from "../utils/native-messaging.js";
 import { isTransferableUrl } from "../utils/url.js";
 import { getProfiles, clearProfileCache } from "../utils/profiles.js";
 import { getLastUsedProfile, setLastUsedProfile } from "../utils/storage.js";
+import { isAtLeast } from "../utils/version.js";
+import { REQUIRED_NMH_VERSION } from "../utils/constants.js";
 
 self.addEventListener("unhandledrejection", (event) => {
   console.error("Profilissimo: unhandled rejection", event.reason);
@@ -117,23 +119,81 @@ interface ProfilesResult {
   error?: string;
 }
 
-async function handleTransfer(url: string, targetProfile: string, sourceTabId?: number): Promise<TransferResult> {
-  if (!isTransferableUrl(url)) {
+// Cached on init from health_check; controls whether we can route non-http(s)
+// URLs and no-URL cases to the new NMH actions or have to bail. Refreshed on
+// every health_check message refresh.
+let nmhSupportsExtendedTransfer = false;
+
+async function refreshNmhCapabilities(): Promise<{ connected: boolean; version?: string }> {
+  const result = await healthCheck();
+  nmhSupportsExtendedTransfer = result.connected && isAtLeast(result.version, REQUIRED_NMH_VERSION);
+  return result;
+}
+
+// Chrome silently drops chrome:// URLs (and some others) when forwarded to an
+// already-running Chrome instance via CLI. Workaround: send the target Chrome
+// a chrome-extension:// URL it WILL accept, and have that page navigate the
+// new tab via chrome.tabs.update — which IS allowed to reach chrome:// from an
+// extension context with the tabs permission. http(s) URLs work fine via CLI
+// directly, so we only wrap the cases Chrome blocks.
+function wrapForCrossProfileNav(url: string): string {
+  if (url.startsWith("http:") || url.startsWith("https:")) return url;
+  const redirectBase = chrome.runtime.getURL("redirect.html");
+  return `${redirectBase}?to=${encodeURIComponent(url)}`;
+}
+
+async function handleTransfer(
+  url: string | null | undefined,
+  targetProfile: string,
+  sourceTabId?: number,
+): Promise<TransferResult> {
+  const hasTransferableUrl = typeof url === "string" && url.length > 0 && isTransferableUrl(url);
+
+  // Branch 1: URL we can transfer. Use open_url. http(s) always works against
+  // the published 1.0.0 NMH; non-http schemes require 1.1.0+.
+  if (hasTransferableUrl) {
+    const isHttp = url!.startsWith("http:") || url!.startsWith("https:");
+    if (!isHttp && !nmhSupportsExtendedTransfer) {
+      return {
+        success: false,
+        error: "Your helper app needs to be updated to transfer this URL. Open Settings to update.",
+      };
+    }
+    try {
+      const transferUrl = wrapForCrossProfileNav(url!);
+      const response = await openUrlInProfile(transferUrl, targetProfile);
+      if (response.success) {
+        await setLastUsedProfile(targetProfile);
+        try {
+          const config = await getConfig();
+          if (config.closeSourceTab && sourceTabId !== undefined) {
+            await safeCloseTab(sourceTabId);
+          }
+        } catch {
+          // Config not available — don't close tab
+        }
+      }
+      return response;
+    } catch (err) {
+      return { success: false, error: errorMessage(err) };
+    }
+  }
+
+  // Branch 2: No URL or javascript: URL. Open a fresh window in the target
+  // profile via open_profile. Requires 1.1.0+ NMH; bail with the legacy
+  // message on older NMHs so users see today's behavior, not a confusing new
+  // one.
+  if (!nmhSupportsExtendedTransfer) {
     return { success: false, error: "URL must use http: or https: scheme" };
   }
 
   try {
-    const response = await openUrlInProfile(url, targetProfile);
+    const response = await openProfile(targetProfile);
     if (response.success) {
       await setLastUsedProfile(targetProfile);
-      try {
-        const config = await getConfig();
-        if (config.closeSourceTab && sourceTabId !== undefined) {
-          await safeCloseTab(sourceTabId);
-        }
-      } catch {
-        // Config not available — don't close tab
-      }
+      // Auto-close suppressed: there was no URL transfer, so the source tab
+      // is intentional context (e.g. chrome://settings the user was reading).
+      // Closing it would be hostile.
     }
     return response;
   } catch (err) {
@@ -157,7 +217,7 @@ async function handleGetProfiles(forceRefresh?: boolean): Promise<ProfilesResult
 // and context menus need their Chrome API state rebuilt on every restart.
 void (async () => {
   try {
-    const health = await healthCheck();
+    const health = await refreshNmhCapabilities();
     if (health.connected) {
       await buildContextMenus();
     }
@@ -201,7 +261,6 @@ chrome.commands.onCommand.addListener(async (command) => {
   if (command !== "transfer-to-default") return;
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (!tab?.url || !isTransferableUrl(tab.url)) return;
 
   let targetProfile: string | null = null;
   try {
@@ -219,7 +278,7 @@ chrome.commands.onCommand.addListener(async (command) => {
     return;
   }
 
-  const result = await handleTransfer(tab.url, targetProfile, tab.id);
+  const result = await handleTransfer(tab?.url, targetProfile, tab?.id);
 
   if (!result.success) {
     console.error("Profilissimo: shortcut transfer failed", result.error);
@@ -230,7 +289,9 @@ chrome.commands.onCommand.addListener(async (command) => {
 
 interface TransferMessage {
   type: "transfer";
-  url: string;
+  // Optional: when absent or empty, the service worker routes to open_profile
+  // (opens a fresh window in the target profile, no URL transferred).
+  url?: string;
   targetProfile: string;
   sourceTabId?: number;
 }
@@ -265,7 +326,7 @@ function isValidMessage(message: unknown): message is ExtensionMessage {
   const msg = message as Record<string, unknown>;
   switch (msg.type) {
     case "transfer":
-      return typeof msg.url === "string" && msg.url.length > 0 &&
+      return (msg.url === undefined || typeof msg.url === "string") &&
         typeof msg.targetProfile === "string" && msg.targetProfile.length > 0 &&
         (msg.sourceTabId === undefined || typeof msg.sourceTabId === "number");
     case "get_profiles":
@@ -300,7 +361,7 @@ chrome.runtime.onMessage.addListener((message: unknown, sender, sendResponse) =>
       return true;
 
     case "health_check":
-      healthCheck()
+      refreshNmhCapabilities()
         .then((result) => sendResponse(result))
         .catch(() => sendResponse({ connected: false }));
       return true;
