@@ -1,6 +1,7 @@
 import { $ } from "../utils/dom.js";
 import { profileLabel } from "../utils/format.js";
-import { INSTALL_COMMAND, UNINSTALL_COMMAND } from "../utils/constants.js";
+import { INSTALL_COMMAND, UNINSTALL_COMMAND, REQUIRED_NMH_VERSION } from "../utils/constants.js";
+import { isAtLeast } from "../utils/version.js";
 import {
   fetchInstallableProfiles,
   renderInstallList,
@@ -64,10 +65,12 @@ function createCopyButton(label: string, command: string): HTMLButtonElement {
   return btn;
 }
 
-function renderNmhAction(connected: boolean): void {
+type NmhState = "connected-current" | "connected-outdated" | "disconnected";
+
+function renderNmhAction(state: NmhState): void {
   nmhAction.replaceChildren();
 
-  if (connected) {
+  if (state === "connected-current") {
     const btn = createCopyButton("Copy uninstall command", UNINSTALL_COMMAND);
     const hint = document.createElement("p");
     hint.className = "description";
@@ -76,16 +79,30 @@ function renderNmhAction(connected: boolean): void {
     hint.textContent = "Paste in Terminal to remove the helper app.";
     nmhAction.appendChild(btn);
     nmhAction.appendChild(hint);
-  } else {
-    const btn = createCopyButton("Copy install command", INSTALL_COMMAND);
+    return;
+  }
+
+  if (state === "connected-outdated") {
+    const btn = createCopyButton("Copy update command", INSTALL_COMMAND);
     const hint = document.createElement("p");
     hint.className = "description";
     hint.style.marginTop = "6px";
     hint.style.marginBottom = "0";
-    hint.textContent = "Paste in Terminal, then restart Chrome.";
+    hint.textContent = "An update is available. Paste in Terminal, then restart Chrome.";
     nmhAction.appendChild(btn);
     nmhAction.appendChild(hint);
+    return;
   }
+
+  // disconnected
+  const btn = createCopyButton("Copy install command", INSTALL_COMMAND);
+  const hint = document.createElement("p");
+  hint.className = "description";
+  hint.style.marginTop = "6px";
+  hint.style.marginBottom = "0";
+  hint.textContent = "Paste in Terminal, then restart Chrome.";
+  nmhAction.appendChild(btn);
+  nmhAction.appendChild(hint);
 }
 
 async function init(): Promise<void> {
@@ -149,10 +166,21 @@ async function init(): Promise<void> {
   } catch {
     // NMH not reachable
   }
-  nmhIndicator.className = `indicator ${connected ? "connected" : "disconnected"}`;
-  nmhText.textContent = connected ? "Connected" : "Not connected";
+  const upToDate = connected && isAtLeast(version ?? undefined, REQUIRED_NMH_VERSION);
+  const nmhState: NmhState = !connected
+    ? "disconnected"
+    : upToDate
+    ? "connected-current"
+    : "connected-outdated";
+
+  nmhIndicator.className = `indicator ${connected ? (upToDate ? "connected" : "outdated") : "disconnected"}`;
+  nmhText.textContent = !connected
+    ? "Not connected"
+    : upToDate
+    ? "Connected"
+    : "Connected — update available";
   nmhVersion.textContent = version ? `v${version}` : "";
-  renderNmhAction(connected);
+  renderNmhAction(nmhState);
 
   if (connected) {
     await initOtherProfilesSection();

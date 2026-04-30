@@ -4,6 +4,11 @@ interface OpenUrlRequest {
   targetProfile: string;
 }
 
+interface OpenProfileRequest {
+  action: "open_profile";
+  targetProfile: string;
+}
+
 interface ListProfilesRequest {
   action: "list_profiles";
 }
@@ -22,7 +27,13 @@ interface SetConfigRequest {
   closeSourceTab?: boolean;
 }
 
-export type NMHRequest = OpenUrlRequest | ListProfilesRequest | HealthCheckRequest | GetConfigRequest | SetConfigRequest;
+export type NMHRequest =
+  | OpenUrlRequest
+  | OpenProfileRequest
+  | ListProfilesRequest
+  | HealthCheckRequest
+  | GetConfigRequest
+  | SetConfigRequest;
 
 export interface ProfileInfo {
   directory: string;

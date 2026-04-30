@@ -50,8 +50,18 @@ async function findChrome(): Promise<string> {
 
 const SPAWN_TIMEOUT_MS = 5_000;
 
-export async function launchInProfile(url: string, profileDirectory: string): Promise<void> {
+export async function launchInProfile(
+  url: string | undefined,
+  profileDirectory: string,
+): Promise<void> {
   const chromePath = await findChrome();
+
+  // When a URL is provided, we use `--` as an argv terminator so a URL that
+  // *somehow* slipped past validation can't be reinterpreted as a Chrome flag.
+  // When there's no URL, we just open the profile fresh.
+  const args = url
+    ? [`--profile-directory=${profileDirectory}`, "--", url]
+    : [`--profile-directory=${profileDirectory}`];
 
   return new Promise((resolve, reject) => {
     let settled = false;
@@ -63,11 +73,7 @@ export async function launchInProfile(url: string, profileDirectory: string): Pr
       }
     }, SPAWN_TIMEOUT_MS);
 
-    const child = spawn(
-      chromePath,
-      [`--profile-directory=${profileDirectory}`, "--", url],
-      { detached: true, stdio: "ignore" },
-    );
+    const child = spawn(chromePath, args, { detached: true, stdio: "ignore" });
 
     child.once("error", (err) => {
       if (!settled) {

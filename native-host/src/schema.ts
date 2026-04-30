@@ -11,6 +11,11 @@ export interface OpenUrlRequest {
   targetProfile: string;
 }
 
+export interface OpenProfileRequest {
+  action: "open_profile";
+  targetProfile: string;
+}
+
 export interface ListProfilesRequest {
   action: "list_profiles";
 }
@@ -29,11 +34,17 @@ export interface SetConfigRequest {
   closeSourceTab?: boolean;
 }
 
-export type NMHRequest = OpenUrlRequest | ListProfilesRequest | HealthCheckRequest | GetConfigRequest | SetConfigRequest;
+export type NMHRequest =
+  | OpenUrlRequest
+  | OpenProfileRequest
+  | ListProfilesRequest
+  | HealthCheckRequest
+  | GetConfigRequest
+  | SetConfigRequest;
 
 type NMHAction = NMHRequest["action"];
 
-export const NMH_VERSION = "1.0.0";
+export const NMH_VERSION = "1.1.0";
 
 export interface NMHResponse {
   success: boolean;
@@ -43,16 +54,34 @@ export interface NMHResponse {
   config?: { defaultProfile: string | null; closeSourceTab: boolean };
 }
 
-const VALID_ACTIONS: NMHAction[] = ["open_url", "list_profiles", "health_check", "get_config", "set_config"];
-const ALLOWED_URL_SCHEMES = ["http:", "https:"];
+const VALID_ACTIONS: NMHAction[] = [
+  "open_url",
+  "open_profile",
+  "list_profiles",
+  "health_check",
+  "get_config",
+  "set_config",
+];
+
+// Schemes that execute code in the *current page* context (as opposed to
+// navigating to a new document). Chrome treats these specially in the address
+// bar; passing one through `--` to a fresh Chrome process is undefined and
+// potentially unsafe. Block them at the boundary.
+const BLOCKED_URL_SCHEMES = ["javascript:"];
 
 export const PROFILE_DIR_PATTERN = /^[a-zA-Z0-9 _-]+$/;
 
 function isValidUrl(value: string): boolean {
+  // Argv-injection defenses. The launcher uses `--` as an argv terminator, but
+  // belt-and-suspenders: also reject anything starting with `-`, and any
+  // control characters that could split an argv on the wire.
   if (value.startsWith("-")) return false;
+  if (/[\0\r\n]/.test(value)) return false;
+
   try {
     const parsed = new URL(value);
-    return ALLOWED_URL_SCHEMES.includes(parsed.protocol);
+    if (BLOCKED_URL_SCHEMES.includes(parsed.protocol)) return false;
+    return true;
   } catch {
     return false;
   }
@@ -80,7 +109,7 @@ export function validateRequest(data: unknown): { valid: true; request: NMHReque
       return { valid: false, error: "open_url requires a non-empty 'url' field" };
     }
     if (!isValidUrl(obj.url)) {
-      return { valid: false, error: "URL must use http: or https: scheme" };
+      return { valid: false, error: "URL is not a navigable Chrome URL" };
     }
     if (typeof obj.targetProfile !== "string" || obj.targetProfile.length === 0) {
       return { valid: false, error: "open_url requires a non-empty 'targetProfile' field" };
@@ -91,6 +120,19 @@ export function validateRequest(data: unknown): { valid: true; request: NMHReque
     return {
       valid: true,
       request: { action: "open_url", url: obj.url, targetProfile: obj.targetProfile },
+    };
+  }
+
+  if (action === "open_profile") {
+    if (typeof obj.targetProfile !== "string" || obj.targetProfile.length === 0) {
+      return { valid: false, error: "open_profile requires a non-empty 'targetProfile' field" };
+    }
+    if (!isValidProfileDirectory(obj.targetProfile)) {
+      return { valid: false, error: "targetProfile contains invalid characters (must be alphanumeric, spaces, hyphens, or underscores only)" };
+    }
+    return {
+      valid: true,
+      request: { action: "open_profile", targetProfile: obj.targetProfile },
     };
   }
 

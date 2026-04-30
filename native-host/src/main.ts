@@ -133,6 +133,14 @@ async function handleMessage(raw: Buffer): Promise<NMHResponse> {
         return { success: false, error: errorMessage(err) };
       }
 
+    case "open_profile":
+      try {
+        await launchInProfile(undefined, request.targetProfile);
+        return { success: true };
+      } catch (err) {
+        return { success: false, error: errorMessage(err) };
+      }
+
     case "get_config":
       try {
         const config = await readConfig();

@@ -161,6 +161,10 @@ a:hover {
   background: #ea4335;
 }
 
+.indicator.outdated {
+  background: #f9ab00;
+}
+
 .nmh-version {
   font-size: 11px;
   color: #80868b;

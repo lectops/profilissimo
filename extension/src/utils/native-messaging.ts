@@ -68,6 +68,10 @@ export async function openUrlInProfile(url: string, targetProfile: string): Prom
   return sendNativeMessage({ action: "open_url", url, targetProfile });
 }
 
+export async function openProfile(targetProfile: string): Promise<NMHResponse> {
+  return sendNativeMessage({ action: "open_profile", targetProfile });
+}
+
 export async function getConfig(): Promise<{ defaultProfile: string | null; closeSourceTab: boolean }> {
   const response = await sendNativeMessage({ action: "get_config" });
   return response.config ?? { defaultProfile: null, closeSourceTab: false };
