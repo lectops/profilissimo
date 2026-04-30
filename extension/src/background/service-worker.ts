@@ -358,7 +358,7 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 
   if (prefix === "pin") {
     if (!tab?.url) return;
-    await handleAddPinFromContextMenu(tab.url, profileDir);
+    await handleAddPinFromContextMenu(tab.url, profileDir, tab.id);
     return;
   }
 
@@ -375,7 +375,11 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
   }
 });
 
-async function handleAddPinFromContextMenu(pageUrl: string, profileDir: string): Promise<void> {
+async function handleAddPinFromContextMenu(
+  pageUrl: string,
+  profileDir: string,
+  sourceTabId?: number,
+): Promise<void> {
   const hostname = hostnameFromUrl(pageUrl);
   if (!hostname || !isValidPattern(hostname)) {
     console.warn("Profilissimo: cannot pin non-hostname URL", pageUrl);
@@ -400,6 +404,18 @@ async function handleAddPinFromContextMenu(pageUrl: string, profileDir: string):
     pinnedRules = updated;
   } catch (err) {
     console.error("Profilissimo: failed to save pinned rule", err);
+    return;
+  }
+
+  // Pin + go: transfer the URL to the target profile now, mirroring the
+  // popup's "always open here" gesture. Skip when pinning to the current
+  // profile — Chrome would just open a duplicate tab.
+  const currentDir = await getCurrentProfileDirectory();
+  if (currentDir && currentDir !== profileDir) {
+    const result = await handleTransfer(pageUrl, profileDir, sourceTabId);
+    if (!result.success) {
+      console.error("Profilissimo: pin-and-go transfer failed", result.error);
+    }
   }
 }
 

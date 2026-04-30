@@ -15,9 +15,6 @@ const refreshBtn = $("refresh-btn") as HTMLButtonElement;
 const setupLink = $("setup-link") as HTMLAnchorElement;
 const copyInstallBtn = $("copy-install-btn") as HTMLButtonElement;
 const pinSection = $("pin-section") as HTMLDivElement;
-const pinToggle = $("pin-toggle") as HTMLButtonElement;
-const pinToggleLabel = $("pin-toggle-label") as HTMLSpanElement;
-const pinPicker = $("pin-picker") as HTMLDivElement;
 const pinHostnameEl = $("pin-hostname") as HTMLSpanElement;
 const pinProfileList = $("pin-profile-list") as HTMLUListElement;
 
@@ -166,7 +163,7 @@ async function loadProfiles(forceRefresh = false): Promise<void> {
 async function maybeShowPinSection(): Promise<void> {
   // Pinning is gated on:
   //   1. Feature flag on (matches right-click submenu behavior)
-  //   2. At least one non-current profile to pin to
+  //   2. At least one profile loaded
   //   3. Active tab's URL is a real http(s) page with a hostname
   let configResponse: { success?: boolean; config?: { urlPinningEnabled?: boolean; pinnedRules?: PinnedRule[] } } | undefined;
   try {
@@ -178,8 +175,7 @@ async function maybeShowPinSection(): Promise<void> {
 
   cachedPinnedRules = Array.isArray(configResponse.config.pinnedRules) ? configResponse.config.pinnedRules : [];
 
-  const otherProfiles = cachedProfiles.filter((p) => !cachedCurrentEmail || p.email !== cachedCurrentEmail);
-  if (otherProfiles.length === 0) return;
+  if (cachedProfiles.length === 0) return;
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   const hostname = tab?.url ? hostnameFromUrl(tab.url) : null;
@@ -188,25 +184,25 @@ async function maybeShowPinSection(): Promise<void> {
   currentTabHostname = hostname;
   const existingRule = cachedPinnedRules.find((r) => r.pattern === hostname);
 
-  if (existingRule) {
-    const target = cachedProfiles.find((p) => p.directory === existingRule.targetProfileDirectory);
-    pinToggleLabel.textContent = target
-      ? `Pinned to ${profileLabel(target)} — change…`
-      : "Pinned (target unavailable) — change…";
-  } else {
-    pinToggleLabel.textContent = "Always open this site in…";
-  }
-
   pinHostnameEl.textContent = hostname;
-  renderPinPicker(otherProfiles, existingRule);
+  renderPinPicker(cachedProfiles, existingRule);
   pinSection.classList.remove("hidden");
-  pinPicker.classList.add("hidden");
+}
+
+function getCurrentDirectoryFromCache(): string | null {
+  if (!cachedCurrentEmail) return null;
+  const match = cachedProfiles.find((p) => p.email === cachedCurrentEmail);
+  return match?.directory ?? null;
 }
 
 function renderPinPicker(profiles: ProfileInfo[], existing: PinnedRule | undefined): void {
   pinProfileList.replaceChildren();
 
+  const currentDir = getCurrentDirectoryFromCache();
+
   for (const profile of profiles) {
+    const isCurrent = profile.directory === currentDir;
+
     const li = document.createElement("li");
     li.className = "pin-profile-item";
     li.setAttribute("role", "button");
@@ -214,7 +210,7 @@ function renderPinPicker(profiles: ProfileInfo[], existing: PinnedRule | undefin
 
     const name = document.createElement("span");
     name.className = "pin-profile-name";
-    name.textContent = profileLabel(profile);
+    name.textContent = isCurrent ? `${profileLabel(profile)} (current)` : profileLabel(profile);
     li.appendChild(name);
 
     if (existing && existing.targetProfileDirectory === profile.directory) {
@@ -268,13 +264,30 @@ async function savePin(targetDir: string): Promise<void> {
   ];
   try {
     const response = await chrome.runtime.sendMessage({ type: "set_config", pinnedRules: updated });
-    if (response?.success) {
-      const target = cachedProfiles.find((p) => p.directory === targetDir);
-      showStatus(`Pinned ${currentTabHostname} to ${target ? profileLabel(target) : targetDir}`, "success");
-      setTimeout(() => window.close(), 800);
-    } else {
+    if (!response?.success) {
       showStatus("Failed to save pin", "error");
+      return;
     }
+    const target = cachedProfiles.find((p) => p.directory === targetDir);
+    const targetLabel = target ? profileLabel(target) : targetDir;
+    const currentDir = getCurrentDirectoryFromCache();
+
+    // Pin + go: if target is a different profile, transfer the URL there now.
+    // Same shape as the popup's transfer click — service worker handles
+    // closeSourceTab per user config.
+    if (currentDir && currentDir !== targetDir) {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      void chrome.runtime.sendMessage({
+        type: "transfer",
+        url: tab?.url,
+        targetProfile: targetDir,
+        sourceTabId: tab?.id,
+      });
+      showStatus(`Pinned and opened in ${targetLabel}`, "success");
+    } else {
+      showStatus(`Pinned to ${targetLabel}`, "success");
+    }
+    setTimeout(() => window.close(), 800);
   } catch {
     showStatus("Failed to save pin", "error");
   }
@@ -319,9 +332,5 @@ setupLink.addEventListener("click", (e) => {
 });
 
 refreshBtn.addEventListener("click", () => void loadProfiles(true));
-
-pinToggle.addEventListener("click", () => {
-  pinPicker.classList.toggle("hidden");
-});
 
 void loadProfiles();
