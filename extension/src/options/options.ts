@@ -1,6 +1,6 @@
 import { $ } from "../utils/dom.js";
 import { profileLabel } from "../utils/format.js";
-import { INSTALL_COMMAND, UNINSTALL_COMMAND, REQUIRED_NMH_VERSION } from "../utils/constants.js";
+import { INSTALL_COMMAND, UNINSTALL_COMMAND, REQUIRED_NMH_VERSION, NMH_RELEASE_PAGE_URL } from "../utils/constants.js";
 import { isAtLeast } from "../utils/version.js";
 import { isValidPattern } from "../utils/pin-matcher.js";
 import { uuid } from "../utils/uuid.js";
@@ -29,6 +29,8 @@ const installList = $("profile-install-list") as HTMLUListElement;
 const installAllBtn = $("install-all-btn") as HTMLButtonElement;
 const installStatus = $("install-status");
 
+const pinningSectionBody = $("pinning-section-body") as HTMLDivElement;
+const pinningNeedsUpdate = $("pinning-needs-update") as HTMLDivElement;
 const pinningToggle = $("url-pinning-toggle") as HTMLInputElement;
 const pinningDisclosure = $("pinning-disclosure") as HTMLDivElement;
 const pinningBody = $("pinning-body") as HTMLDivElement;
@@ -91,6 +93,16 @@ function createCopyButton(label: string, command: string): HTMLButtonElement {
 
 type NmhState = "connected-current" | "connected-outdated" | "disconnected";
 
+function createDownloadLink(): HTMLAnchorElement {
+  const a = document.createElement("a");
+  a.href = NMH_RELEASE_PAGE_URL;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  a.textContent = "Or download manually";
+  a.className = "helper-download-link";
+  return a;
+}
+
 function renderNmhAction(state: NmhState): void {
   nmhAction.replaceChildren();
 
@@ -115,6 +127,7 @@ function renderNmhAction(state: NmhState): void {
     hint.textContent = "An update is available. Paste in Terminal, then restart Chrome.";
     nmhAction.appendChild(btn);
     nmhAction.appendChild(hint);
+    nmhAction.appendChild(createDownloadLink());
     return;
   }
 
@@ -127,11 +140,14 @@ function renderNmhAction(state: NmhState): void {
   hint.textContent = "Paste in Terminal, then restart Chrome.";
   nmhAction.appendChild(btn);
   nmhAction.appendChild(hint);
+  nmhAction.appendChild(createDownloadLink());
 }
 
-function profileLabelByDirectory(directory: string): string {
+function profileLookupByDirectory(directory: string): { label: string; available: boolean } {
   const match = allProfiles.find((p) => p.directory === directory);
-  return match ? profileLabel(match) : directory;
+  return match
+    ? { label: profileLabel(match), available: true }
+    : { label: directory, available: false };
 }
 
 function renderRulesTable(): void {
@@ -156,7 +172,11 @@ function renderRulesTable(): void {
     tr.appendChild(tdPattern);
 
     const tdTarget = document.createElement("td");
-    tdTarget.textContent = profileLabelByDirectory(rule.targetProfileDirectory);
+    const lookup = profileLookupByDirectory(rule.targetProfileDirectory);
+    tdTarget.textContent = lookup.available ? lookup.label : `${lookup.label} (unavailable)`;
+    if (!lookup.available) {
+      tdTarget.classList.add("rules-target-unavailable");
+    }
     tr.appendChild(tdTarget);
 
     const tdActions = document.createElement("td");
@@ -183,6 +203,11 @@ function refreshAddRuleProfileOptions(): void {
     option.textContent = profileLabel(profile);
     addRuleProfile.appendChild(option);
   }
+}
+
+function applyNmhVersionGate(supported: boolean): void {
+  pinningSectionBody.classList.toggle("hidden", !supported);
+  pinningNeedsUpdate.classList.toggle("hidden", supported);
 }
 
 function applyPinningEnabledState(enabled: boolean): void {
@@ -355,6 +380,11 @@ async function init(): Promise<void> {
     : "Connected — update available";
   nmhVersion.textContent = version ? `v${version}` : "";
   renderNmhAction(nmhState);
+
+  // Gate the Pinned URLs interactive UI on NMH version. On 1.0.0 NMH the
+  // toggle would silently fail to persist (old NMH ignores unknown config
+  // fields), so hide the controls and show a "needs update" notice instead.
+  applyNmhVersionGate(connected && upToDate);
 
   if (connected) {
     await initOtherProfilesSection();

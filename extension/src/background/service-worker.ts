@@ -204,7 +204,7 @@ async function handleTransfer(
     if (!isHttp && !nmhSupportsExtendedTransfer) {
       return {
         success: false,
-        error: "Your helper app needs to be updated to transfer this URL. Open Settings to update.",
+        error: "Update the helper app to transfer this URL — open Settings to update.",
       };
     }
     try {
@@ -228,11 +228,14 @@ async function handleTransfer(
   }
 
   // Branch 2: No URL or javascript: URL. Open a fresh window in the target
-  // profile via open_profile. Requires 1.1.0+ NMH; bail with the legacy
-  // message on older NMHs so users see today's behavior, not a confusing new
-  // one.
+  // profile via open_profile. Requires 1.1.0+ NMH; on older NMHs we point at
+  // Settings instead of the misleading "URL must be http(s)" legacy message —
+  // the URL isn't really the problem, the helper app is.
   if (!nmhSupportsExtendedTransfer) {
-    return { success: false, error: "URL must use http: or https: scheme" };
+    return {
+      success: false,
+      error: "Update the helper app to transfer this URL — open Settings to update.",
+    };
   }
 
   try {
@@ -287,11 +290,31 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
     const response = await openUrlInProfile(details.url, rule.targetProfileDirectory);
     if (response.success) {
       await safeCloseTab(details.tabId);
+    } else {
+      notifyPinFailure(rule.pattern, response.error ?? "Unknown error");
     }
   } catch (err) {
-    console.error("Profilissimo: pinned redirect failed", err);
+    notifyPinFailure(rule.pattern, errorMessage(err));
   }
 });
+
+function notifyPinFailure(pattern: string, reason: string): void {
+  // Best-effort surface so users notice when a rule misfires (e.g. target
+  // profile was deleted in Chrome). Notifications API is fire-and-forget; if
+  // the user has notifications muted, the source tab still stays open which
+  // is its own signal.
+  try {
+    chrome.notifications.create({
+      type: "basic",
+      iconUrl: chrome.runtime.getURL("icons/icon-128.png"),
+      title: "Profilissimo: pin didn't fire",
+      message: `Couldn't redirect ${pattern}: ${reason}. Check Settings → Pinned URLs.`,
+      priority: 0,
+    });
+  } catch (err) {
+    console.error("Profilissimo: notification failed", err);
+  }
+}
 
 // --- Initialization ---
 

@@ -42,42 +42,48 @@
       </div>
       <p class="description">Auto-redirect specific sites to a designated profile. Matches the full hostname only.</p>
 
-      <label class="toggle-row">
-        <input type="checkbox" id="url-pinning-toggle">
-        <span>Auto-redirect pinned URLs</span>
-      </label>
-
-      <div id="pinning-disclosure" class="pinning-disclosure hidden">
-        Profilissimo will check the URLs you visit against your rules. Nothing leaves your machine.
+      <div id="pinning-needs-update" class="pinning-needs-update hidden">
+        Update the helper app to enable URL pinning. See <a href="#nmh-status">Helper App</a> above.
       </div>
 
-      <div id="pinning-body" class="pinning-body">
-        <table id="rules-table" class="rules-table hidden">
-          <thead>
-            <tr>
-              <th scope="col">Hostname</th>
-              <th scope="col">Profile</th>
-              <th scope="col" class="rules-actions-col"><span class="visually-hidden">Actions</span></th>
-            </tr>
-          </thead>
-          <tbody id="rules-tbody"></tbody>
-        </table>
+      <div id="pinning-section-body">
+        <label class="toggle-row">
+          <input type="checkbox" id="url-pinning-toggle">
+          <span>Auto-redirect pinned URLs</span>
+        </label>
 
-        <p id="rules-empty" class="rules-empty">No rules yet. Add one below or right-click a page and pick "Always open this site in…".</p>
+        <div id="pinning-disclosure" class="pinning-disclosure hidden">
+          Profilissimo will check the URLs you visit against your rules. Nothing leaves your machine.
+        </div>
 
-        <form id="add-rule-form" class="add-rule-form" novalidate>
-          <input
-            type="text"
-            id="add-rule-pattern"
-            placeholder="hostname (e.g. mail.google.com)"
-            autocomplete="off"
-            spellcheck="false">
-          <select id="add-rule-profile">
-            <option value="">Choose profile…</option>
-          </select>
-          <button type="submit" id="add-rule-btn" class="btn-primary">Add</button>
-        </form>
-        <p id="add-rule-error" class="add-rule-error hidden"></p>
+        <div id="pinning-body" class="pinning-body">
+          <table id="rules-table" class="rules-table hidden">
+            <thead>
+              <tr>
+                <th scope="col">Hostname</th>
+                <th scope="col">Profile</th>
+                <th scope="col" class="rules-actions-col"><span class="visually-hidden">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody id="rules-tbody"></tbody>
+          </table>
+
+          <p id="rules-empty" class="rules-empty">No rules yet. Add one below or right-click a page and pick "Always open this site in…".</p>
+
+          <form id="add-rule-form" class="add-rule-form" novalidate>
+            <input
+              type="text"
+              id="add-rule-pattern"
+              placeholder="hostname (e.g. mail.google.com)"
+              autocomplete="off"
+              spellcheck="false">
+            <select id="add-rule-profile">
+              <option value="">Choose profile…</option>
+            </select>
+            <button type="submit" id="add-rule-btn" class="btn-primary">Add</button>
+          </form>
+          <p id="add-rule-error" class="add-rule-error hidden"></p>
+        </div>
       </div>
     </section>
 
@@ -94,9 +100,9 @@
       </p>
     </section>
 
-    <section class="section">
+    <section id="nmh-status" class="section">
       <h2>Helper App</h2>
-      <div id="nmh-status" class="nmh-status">
+      <div class="nmh-status">
         <span id="nmh-indicator" class="indicator"></span>
         <span id="nmh-text">Checking…</span>
       </div>

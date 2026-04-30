@@ -32,6 +32,17 @@
 
     <ul id="profile-list" class="profile-list"></ul>
 
+    <div id="pin-section" class="pin-section hidden">
+      <button id="pin-toggle" class="pin-toggle" type="button">
+        <span class="pin-icon" aria-hidden="true">&#128274;</span>
+        <span id="pin-toggle-label">Always open this site in…</span>
+      </button>
+      <div id="pin-picker" class="pin-picker hidden">
+        <p class="pin-picker-prompt">Always open <span id="pin-hostname" class="pin-hostname"></span> in:</p>
+        <ul id="pin-profile-list" class="pin-profile-list"></ul>
+      </div>
+    </div>
+
     <div id="status" class="status hidden"></div>
 
     <button id="refresh-btn" class="refresh-btn" title="Refresh profiles" aria-label="Refresh profiles">

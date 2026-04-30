@@ -9,3 +9,7 @@ export const CWS_LISTING_URL = "https://chromewebstore.google.com/detail/profili
 // `health_check`; older NMHs degrade to the previous "URL must be http/https"
 // behavior, with a Settings page nudge to update.
 export const REQUIRED_NMH_VERSION = "1.1.0";
+
+// Human-browsable GitHub release page for users who'd rather download the
+// helper app binary themselves than paste a curl install command.
+export const NMH_RELEASE_PAGE_URL = `https://github.com/lectops/profilissimo/releases/tag/v${REQUIRED_NMH_VERSION}`;

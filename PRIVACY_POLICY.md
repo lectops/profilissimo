@@ -41,6 +41,7 @@ All functionality runs entirely on your local machine. The extension communicate
 | `storage` | Save your preferences |
 | `tabs` | Read the current tab's URL for transfer |
 | `webNavigation` | Detect top-frame navigations to match against pinned-URL rules (only when URL pinning is enabled in Settings) |
+| `notifications` | Show a system notification when a pinned redirect fails (e.g. target profile was deleted) so the rule misfire isn't silent |
 
 ## Contact
 
