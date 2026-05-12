@@ -155,6 +155,7 @@ async function handleMessage(raw: Buffer): Promise<NMHResponse> {
         if (request.defaultProfile !== undefined) updates.defaultProfile = request.defaultProfile;
         if (request.closeSourceTab !== undefined) updates.closeSourceTab = request.closeSourceTab;
         if (request.urlPinningEnabled !== undefined) updates.urlPinningEnabled = request.urlPinningEnabled;
+        if (request.otherResidencesDismissed !== undefined) updates.otherResidencesDismissed = request.otherResidencesDismissed;
         if (request.pinnedRules !== undefined) updates.pinnedRules = request.pinnedRules;
         await writeConfig(updates);
         return { success: true };

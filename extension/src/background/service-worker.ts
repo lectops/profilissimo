@@ -274,7 +274,18 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   if (!pinningEnabled) return;
   if (pinnedRules.length === 0) return;
 
-  const rule = findMatchingRule(details.url, pinnedRules);
+  // Cheap stale-cache match first.
+  let rule = findMatchingRule(details.url, pinnedRules);
+  if (!rule) return;
+
+  // Each profile's service worker mirrors NMH config in its own module memory.
+  // A sibling profile's popup can update NMH without our cache hearing about
+  // it, so when we'd otherwise redirect, re-read from NMH (source of truth)
+  // and re-evaluate. Skips the loop where profile A sees "X → B" while
+  // profile B still sees "X → A" and the tab ping-pongs between them.
+  await refreshPinningState();
+  if (!pinningEnabled) return;
+  rule = findMatchingRule(details.url, pinnedRules);
   if (!rule) return;
 
   // Loop guard: if we're already in the target profile, don't redirect.
@@ -481,6 +492,7 @@ interface SetConfigMessage {
   closeSourceTab?: boolean;
   urlPinningEnabled?: boolean;
   pinnedRules?: PinnedRule[];
+  otherResidencesDismissed?: boolean;
 }
 
 type ExtensionMessage = TransferMessage | GetProfilesMessage | HealthCheckMessage | RefreshMenusMessage | GetConfigMessage | SetConfigMessage;
@@ -499,7 +511,8 @@ function isValidMessage(message: unknown): message is ExtensionMessage {
       return (msg.defaultProfile === undefined || msg.defaultProfile === null || typeof msg.defaultProfile === "string") &&
         (msg.closeSourceTab === undefined || typeof msg.closeSourceTab === "boolean") &&
         (msg.urlPinningEnabled === undefined || typeof msg.urlPinningEnabled === "boolean") &&
-        (msg.pinnedRules === undefined || Array.isArray(msg.pinnedRules));
+        (msg.pinnedRules === undefined || Array.isArray(msg.pinnedRules)) &&
+        (msg.otherResidencesDismissed === undefined || typeof msg.otherResidencesDismissed === "boolean");
     case "health_check":
     case "refresh_menus":
     case "get_config":

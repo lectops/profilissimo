@@ -41,6 +41,7 @@ export interface SetConfigRequest {
   closeSourceTab?: boolean;
   urlPinningEnabled?: boolean;
   pinnedRules?: PinnedRule[];
+  otherResidencesDismissed?: boolean;
 }
 
 export type NMHRequest =
@@ -65,6 +66,7 @@ export interface NMHResponse {
     closeSourceTab: boolean;
     urlPinningEnabled: boolean;
     pinnedRules: PinnedRule[];
+    otherResidencesDismissed: boolean;
   };
 }
 
@@ -193,6 +195,9 @@ export function validateRequest(data: unknown): { valid: true; request: NMHReque
     if (obj.urlPinningEnabled !== undefined && typeof obj.urlPinningEnabled !== "boolean") {
       return { valid: false, error: "set_config: 'urlPinningEnabled' must be a boolean" };
     }
+    if (obj.otherResidencesDismissed !== undefined && typeof obj.otherResidencesDismissed !== "boolean") {
+      return { valid: false, error: "set_config: 'otherResidencesDismissed' must be a boolean" };
+    }
     if (obj.pinnedRules !== undefined) {
       if (!Array.isArray(obj.pinnedRules)) {
         return { valid: false, error: "set_config: 'pinnedRules' must be an array" };
@@ -213,6 +218,9 @@ export function validateRequest(data: unknown): { valid: true; request: NMHReque
     }
     if (typeof obj.urlPinningEnabled === "boolean") {
       request.urlPinningEnabled = obj.urlPinningEnabled;
+    }
+    if (typeof obj.otherResidencesDismissed === "boolean") {
+      request.otherResidencesDismissed = obj.otherResidencesDismissed;
     }
     if (Array.isArray(obj.pinnedRules)) {
       request.pinnedRules = obj.pinnedRules as PinnedRule[];

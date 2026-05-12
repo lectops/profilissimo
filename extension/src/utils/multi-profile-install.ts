@@ -1,10 +1,6 @@
 import type { ProfileInfo } from "../types/messages.js";
+import { applyChip } from "./format.js";
 import { CWS_LISTING_URL } from "./constants.js";
-
-const PROFILE_COLORS = [
-  "#1a73e8", "#e8710a", "#d93025", "#188038",
-  "#a142f4", "#e37400", "#129eaf", "#9334e6",
-] as const;
 
 const DEFAULT_LAUNCH_INTERVAL_MS = 200;
 
@@ -97,12 +93,8 @@ function buildRow(
   li.className =
     kind === "current" ? "profile-install-row current" : "profile-install-row";
 
-  const avatar = document.createElement("div");
-  avatar.className = "profile-avatar";
-  avatar.setAttribute("aria-hidden", "true");
-  avatar.style.backgroundColor =
-    PROFILE_COLORS[colorIndex % PROFILE_COLORS.length];
-  avatar.textContent = profile.name.charAt(0).toUpperCase();
+  const chip = document.createElement("span");
+  applyChip(chip, profile, colorIndex);
 
   const info = document.createElement("div");
   info.className = "profile-info";
@@ -121,9 +113,9 @@ function buildRow(
 
   const status = document.createElement("span");
   status.className = "row-status";
-  status.textContent = kind === "current" ? "✓ this profile" : "";
+  status.textContent = kind === "current" ? "this profile" : "ready";
 
-  li.appendChild(avatar);
+  li.appendChild(chip);
   li.appendChild(info);
   li.appendChild(status);
 
@@ -176,7 +168,7 @@ export async function openInAllProfiles(
     setRowStatus(entry, "opening…", "opening");
     const result = await openProfileInWebStore(entry.profile);
     if (result.success) {
-      setRowStatus(entry, "✓ Web Store opened", "opened");
+      setRowStatus(entry, "✓ installed", "opened");
       succeeded++;
     } else {
       setRowStatus(entry, result.error ?? "failed", "failed");
@@ -197,20 +189,20 @@ export function summarizeCascade(
   if (failed === 0) {
     return {
       tone: "success",
-      text: `Web Store opened in ${succeeded} profile${succeeded === 1 ? "" : "s"}. Switch to each window and click Add to Chrome.`,
+      text: `Opened in ${succeeded} other profile${succeeded === 1 ? "" : "s"}. Switch to each window and click Add to Chrome.`,
       buttonLabel: "Open again",
     };
   }
   if (succeeded === 0) {
     return {
       tone: "error",
-      text: "Could not open the Web Store. Check that the helper app is still connected.",
+      text: "Couldn't open the Web Store. Check that the helper app is connected.",
       buttonLabel: "Try again",
     };
   }
   return {
     tone: "success",
-    text: `Opened in ${succeeded} profile${succeeded === 1 ? "" : "s"}; ${failed} failed. Add to Chrome in the windows that opened, then retry the rest.`,
+    text: `Opened in ${succeeded} profile${succeeded === 1 ? "" : "s"}; ${failed} failed. Click Add to Chrome where it opened, then retry the rest.`,
     buttonLabel: "Try again",
   };
 }

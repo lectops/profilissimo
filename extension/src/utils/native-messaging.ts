@@ -77,6 +77,7 @@ const DEFAULT_CONFIG: AppConfig = {
   closeSourceTab: false,
   urlPinningEnabled: false,
   pinnedRules: [],
+  otherResidencesDismissed: false,
 };
 
 export async function getConfig(): Promise<AppConfig> {
@@ -89,6 +90,7 @@ export async function setConfig(updates: {
   closeSourceTab?: boolean;
   urlPinningEnabled?: boolean;
   pinnedRules?: PinnedRule[];
+  otherResidencesDismissed?: boolean;
 }): Promise<void> {
   await sendNativeMessage({ action: "set_config", ...updates });
 }

@@ -1,11 +1,12 @@
 import type { PinnedRule, ProfileInfo } from "../types/messages.js";
 import { $ } from "../utils/dom.js";
-import { profileLabel } from "../utils/format.js";
+import { applyChip, profileAccent, profileInitial } from "../utils/format.js";
 import { hostnameFromUrl } from "../utils/pin-matcher.js";
 import { uuid } from "../utils/uuid.js";
 import { isAtLeast } from "../utils/version.js";
 import { INSTALL_COMMAND, REQUIRED_NMH_VERSION } from "../utils/constants.js";
 
+const profileSection = $("profile-section") as HTMLDivElement;
 const profileList = $("profile-list") as HTMLUListElement;
 const setupPrompt = $("setup-prompt") as HTMLDivElement;
 const loading = $("loading") as HTMLDivElement;
@@ -15,17 +16,15 @@ const refreshBtn = $("refresh-btn") as HTMLButtonElement;
 const setupLink = $("setup-link") as HTMLAnchorElement;
 const copyInstallBtn = $("copy-install-btn") as HTMLButtonElement;
 const pinSection = $("pin-section") as HTMLDivElement;
-const pinHostnameEl = $("pin-hostname") as HTMLSpanElement;
+const pinHostnameEl = $("pin-hostname") as HTMLDivElement;
 const pinProfileList = $("pin-profile-list") as HTMLUListElement;
-
-const PROFILE_COLORS = [
-  "#1a73e8", "#e8710a", "#d93025", "#188038",
-  "#a142f4", "#e37400", "#129eaf", "#9334e6",
-] as const;
-
-function getProfileColor(index: number): string {
-  return PROFILE_COLORS[index % PROFILE_COLORS.length];
-}
+const transferState = $("transfer-state") as HTMLDivElement;
+const transferFromChip = $("transfer-from-chip") as HTMLSpanElement;
+const transferToChip = $("transfer-to-chip") as HTMLSpanElement;
+const transferTargetName = $("transfer-target-name") as HTMLSpanElement;
+const currentPageCard = $("current-page-card") as HTMLDivElement;
+const currentFavicon = $("current-favicon") as HTMLSpanElement;
+const currentUrl = $("current-url") as HTMLSpanElement;
 
 let statusTimeout: ReturnType<typeof setTimeout> | null = null;
 let transferring = false;
@@ -37,8 +36,39 @@ let cachedPinnedRules: PinnedRule[] = [];
 function showStatus(message: string, type: "success" | "error"): void {
   if (statusTimeout) clearTimeout(statusTimeout);
   statusEl.textContent = message;
-  statusEl.className = `status ${type}`;
+  statusEl.className = `popup__status ${type}`;
   statusTimeout = setTimeout(() => statusEl.classList.add("hidden"), 2500);
+}
+
+function setCurrentPageCard(url: string | undefined, faviconUrl: string | undefined): void {
+  if (!url) {
+    currentPageCard.classList.add("hidden");
+    return;
+  }
+  let display: string;
+  try {
+    const u = new URL(url);
+    if (u.protocol === "http:" || u.protocol === "https:") {
+      display = u.hostname + (u.pathname === "/" ? "" : u.pathname);
+    } else {
+      display = url;
+    }
+  } catch {
+    display = url;
+  }
+
+  currentUrl.textContent = display;
+  currentFavicon.style.backgroundImage = "";
+  currentFavicon.textContent = "";
+
+  if (faviconUrl) {
+    currentFavicon.style.backgroundImage = `url(${JSON.stringify(faviconUrl)})`;
+  } else {
+    // Letter fallback — first char of hostname
+    const first = display.replace(/^https?:\/\//, "").charAt(0).toUpperCase();
+    currentFavicon.textContent = first || "·";
+  }
+  currentPageCard.classList.remove("hidden");
 }
 
 function renderProfiles(profiles: ProfileInfo[], currentEmail?: string | null): void {
@@ -48,49 +78,105 @@ function renderProfiles(profiles: ProfileInfo[], currentEmail?: string | null): 
     const isCurrent = !!(currentEmail && profile.email === currentEmail);
 
     const li = document.createElement("li");
-    li.className = isCurrent ? "profile-item current" : "profile-item";
+    li.className = isCurrent ? "profile-row profile-row--current" : "profile-row";
 
     if (!isCurrent) {
       li.setAttribute("role", "button");
       li.tabIndex = 0;
-      li.addEventListener("click", () => void transferToProfile(profile));
+      li.addEventListener("click", () => void transferToProfile(profile, index));
       li.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") {
           e.preventDefault();
-          void transferToProfile(profile);
+          void transferToProfile(profile, index);
         }
       });
     }
 
-    const colorDot = document.createElement("div");
-    colorDot.className = "profile-color";
-    colorDot.setAttribute("aria-hidden", "true");
-    colorDot.style.backgroundColor = getProfileColor(index);
-    colorDot.textContent = profile.name.charAt(0).toUpperCase();
+    const chip = document.createElement("span");
+    chip.classList.add("profile-row__chip");
+    applyChip(chip, profile, index);
+
+    const body = document.createElement("div");
+    body.className = "profile-row__body";
 
     const name = document.createElement("span");
-    name.className = "profile-name";
-    name.textContent = profileLabel(profile);
+    name.className = "profile-row__name";
+    name.textContent = profile.name;
+    body.appendChild(name);
 
-    li.appendChild(colorDot);
-    li.appendChild(name);
+    if (profile.email) {
+      const email = document.createElement("span");
+      email.className = "profile-row__email";
+      email.textContent = profile.email;
+      body.appendChild(email);
+    }
+
+    li.appendChild(chip);
+    li.appendChild(body);
 
     if (isCurrent) {
-      const badge = document.createElement("span");
-      badge.className = "current-badge";
-      badge.textContent = "current";
-      li.appendChild(badge);
+      const tag = document.createElement("span");
+      tag.className = "profile-row__current-tag";
+      tag.textContent = "you are here";
+      li.appendChild(tag);
+    } else {
+      const caret = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      caret.setAttribute("width", "14");
+      caret.setAttribute("height", "14");
+      caret.setAttribute("viewBox", "0 0 14 14");
+      caret.setAttribute("fill", "none");
+      caret.setAttribute("aria-hidden", "true");
+      caret.classList.add("profile-row__caret");
+      const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      path.setAttribute("d", "M5 3l4 4-4 4");
+      path.setAttribute("stroke", "currentColor");
+      path.setAttribute("stroke-width", "1.25");
+      path.setAttribute("stroke-linecap", "round");
+      path.setAttribute("stroke-linejoin", "round");
+      caret.appendChild(path);
+      li.appendChild(caret);
     }
 
     profileList.appendChild(li);
   });
 }
 
-async function transferToProfile(profile: ProfileInfo): Promise<void> {
+function showTransferring(fromIndex: number, toIndex: number, toProfile: ProfileInfo): void {
+  const fromIdx = Math.max(fromIndex, 0);
+  const fromProfile = cachedProfiles[fromIdx];
+  if (fromProfile) {
+    transferFromChip.style.setProperty("--chip-accent", profileAccent(fromIdx));
+    transferFromChip.textContent = profileInitial(fromProfile);
+  }
+
+  transferToChip.style.setProperty("--chip-accent", profileAccent(toIndex));
+  transferToChip.textContent = profileInitial(toProfile);
+  // Re-create halo span (cleared by textContent)
+  const halo = document.createElement("span");
+  halo.className = "popup__transfer-halo";
+  halo.setAttribute("aria-hidden", "true");
+  transferToChip.appendChild(halo);
+  transferTargetName.textContent = toProfile.name;
+
+  profileSection.classList.add("hidden");
+  pinSection.classList.add("hidden");
+  currentPageCard.classList.add("hidden");
+  transferState.classList.remove("hidden");
+}
+
+function getCurrentIndex(): number {
+  if (!cachedCurrentEmail) return 0;
+  const idx = cachedProfiles.findIndex((p) => p.email === cachedCurrentEmail);
+  return idx === -1 ? 0 : idx;
+}
+
+async function transferToProfile(profile: ProfileInfo, targetIndex: number): Promise<void> {
   if (transferring) return;
   transferring = true;
 
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+
+  showTransferring(getCurrentIndex(), targetIndex, profile);
 
   try {
     const response = await chrome.runtime.sendMessage({
@@ -101,11 +187,16 @@ async function transferToProfile(profile: ProfileInfo): Promise<void> {
     });
 
     if (response?.success) {
-      showStatus(`Opened in ${profileLabel(profile)}`, "success");
+      // Close shortly after the transferring animation has been seen
+      setTimeout(() => window.close(), 700);
     } else {
+      transferState.classList.add("hidden");
+      profileSection.classList.remove("hidden");
       showStatus(response?.error ?? "Transfer failed", "error");
     }
   } catch {
+    transferState.classList.add("hidden");
+    profileSection.classList.remove("hidden");
     showStatus("Transfer failed", "error");
   } finally {
     transferring = false;
@@ -117,6 +208,8 @@ async function loadProfiles(forceRefresh = false): Promise<void> {
   profileList.replaceChildren();
   setupPrompt.classList.add("hidden");
   pinSection.classList.add("hidden");
+  profileSection.classList.add("hidden");
+  currentPageCard.classList.add("hidden");
 
   try {
     const healthResponse = await chrome.runtime.sendMessage({ type: "health_check" });
@@ -147,9 +240,14 @@ async function loadProfiles(forceRefresh = false): Promise<void> {
       cachedProfiles = response.profiles;
       cachedCurrentEmail = currentEmail;
       renderProfiles(response.profiles, currentEmail);
+      profileSection.classList.remove("hidden");
+
+      // Current page card
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      setCurrentPageCard(tab?.url, tab?.favIconUrl);
 
       if (nmhUpToDate) {
-        await maybeShowPinSection();
+        await maybeShowPinSection(tab);
       }
     } else {
       showStatus(response?.error ?? "Failed to load profiles", "error");
@@ -160,24 +258,27 @@ async function loadProfiles(forceRefresh = false): Promise<void> {
   }
 }
 
-async function maybeShowPinSection(): Promise<void> {
-  // Pinning is gated on:
-  //   1. Feature flag on (matches right-click submenu behavior)
-  //   2. At least one profile loaded
-  //   3. Active tab's URL is a real http(s) page with a hostname
+async function maybeShowPinSection(activeTab?: chrome.tabs.Tab): Promise<void> {
+  // The pin picker is shown whenever:
+  //   1. Profiles loaded
+  //   2. Active tab's URL is a real http(s) page with a hostname
+  // The urlPinningEnabled toggle in Settings only gates *auto-redirect* — the
+  // popup affordance to pin a site to a profile is always available, so
+  // users can discover the feature without flipping a setting first.
   let configResponse: { success?: boolean; config?: { urlPinningEnabled?: boolean; pinnedRules?: PinnedRule[] } } | undefined;
   try {
     configResponse = await chrome.runtime.sendMessage({ type: "get_config" });
   } catch {
     return;
   }
-  if (!configResponse?.success || configResponse.config?.urlPinningEnabled !== true) return;
+  if (!configResponse?.success) return;
 
-  cachedPinnedRules = Array.isArray(configResponse.config.pinnedRules) ? configResponse.config.pinnedRules : [];
+  cachedPinnedRules = Array.isArray(configResponse.config?.pinnedRules) ? configResponse.config!.pinnedRules! : [];
+  const autoRedirectOn = configResponse.config?.urlPinningEnabled === true;
 
   if (cachedProfiles.length === 0) return;
 
-  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  const tab = activeTab ?? (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
   const hostname = tab?.url ? hostnameFromUrl(tab.url) : null;
   if (!hostname) return;
 
@@ -186,7 +287,18 @@ async function maybeShowPinSection(): Promise<void> {
 
   pinHostnameEl.textContent = hostname;
   renderPinPicker(cachedProfiles, existingRule);
+  setAutoRedirectNote(autoRedirectOn);
   pinSection.classList.remove("hidden");
+}
+
+function setAutoRedirectNote(enabled: boolean): void {
+  const note = document.getElementById("pin-auto-note");
+  if (!note) return;
+  if (enabled) {
+    note.classList.add("hidden");
+  } else {
+    note.classList.remove("hidden");
+  }
 }
 
 function getCurrentDirectoryFromCache(): string | null {
@@ -200,23 +312,40 @@ function renderPinPicker(profiles: ProfileInfo[], existing: PinnedRule | undefin
 
   const currentDir = getCurrentDirectoryFromCache();
 
-  for (const profile of profiles) {
+  profiles.forEach((profile, index) => {
     const isCurrent = profile.directory === currentDir;
+    const isSelected = !!(existing && existing.targetProfileDirectory === profile.directory);
 
     const li = document.createElement("li");
-    li.className = "pin-profile-item";
+    li.className = isSelected ? "pin-row pin-row--selected" : "pin-row";
     li.setAttribute("role", "button");
     li.tabIndex = 0;
 
+    const chip = document.createElement("span");
+    chip.classList.add("pin-row__chip");
+    applyChip(chip, profile, index);
+
     const name = document.createElement("span");
-    name.className = "pin-profile-name";
-    name.textContent = isCurrent ? `${profileLabel(profile)} (current)` : profileLabel(profile);
+    name.className = "pin-row__name";
+    name.textContent = isCurrent ? `${profile.name} · here` : profile.name;
+
+    li.appendChild(chip);
     li.appendChild(name);
 
-    if (existing && existing.targetProfileDirectory === profile.directory) {
-      const check = document.createElement("span");
-      check.className = "pin-profile-check";
-      check.textContent = "✓";
+    if (isSelected) {
+      const check = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      check.setAttribute("width", "14");
+      check.setAttribute("height", "14");
+      check.setAttribute("viewBox", "0 0 16 16");
+      check.setAttribute("fill", "none");
+      check.setAttribute("stroke", "currentColor");
+      check.setAttribute("stroke-width", "1.5");
+      check.setAttribute("aria-hidden", "true");
+      const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      p.setAttribute("d", "M3 8l3.5 3.5L13 5");
+      p.setAttribute("stroke-linecap", "round");
+      p.setAttribute("stroke-linejoin", "round");
+      check.appendChild(p);
       li.appendChild(check);
     }
 
@@ -230,11 +359,11 @@ function renderPinPicker(profiles: ProfileInfo[], existing: PinnedRule | undefin
     });
 
     pinProfileList.appendChild(li);
-  }
+  });
 
   if (existing) {
     const li = document.createElement("li");
-    li.className = "pin-profile-item pin-profile-remove";
+    li.className = "pin-row pin-row--remove";
     li.setAttribute("role", "button");
     li.tabIndex = 0;
     li.textContent = "Remove pin";
@@ -269,12 +398,10 @@ async function savePin(targetDir: string): Promise<void> {
       return;
     }
     const target = cachedProfiles.find((p) => p.directory === targetDir);
-    const targetLabel = target ? profileLabel(target) : targetDir;
+    const targetLabel = target ? target.name : targetDir;
     const currentDir = getCurrentDirectoryFromCache();
 
     // Pin + go: if target is a different profile, transfer the URL there now.
-    // Same shape as the popup's transfer click — service worker handles
-    // closeSourceTab per user config.
     if (currentDir && currentDir !== targetDir) {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       void chrome.runtime.sendMessage({
@@ -299,8 +426,9 @@ async function removePin(): Promise<void> {
   try {
     const response = await chrome.runtime.sendMessage({ type: "set_config", pinnedRules: updated });
     if (response?.success) {
-      showStatus(`Removed pin for ${currentTabHostname}`, "success");
-      setTimeout(() => window.close(), 800);
+      cachedPinnedRules = updated;
+      renderPinPicker(cachedProfiles, undefined);
+      showStatus(`Unpinned ${currentTabHostname}`, "success");
     } else {
       showStatus("Failed to remove pin", "error");
     }
@@ -318,10 +446,9 @@ copyInstallBtn.addEventListener("click", async () => {
     await navigator.clipboard.writeText(INSTALL_COMMAND);
     copyInstallBtn.textContent = "Copied!";
     setTimeout(() => {
-      copyInstallBtn.textContent = "Copy install command";
+      copyInstallBtn.textContent = "Copy";
     }, 1500);
   } catch {
-    // Fallback: open onboarding page
     chrome.tabs.create({ url: chrome.runtime.getURL("src/onboarding/onboarding.html") });
   }
 });
@@ -332,5 +459,20 @@ setupLink.addEventListener("click", (e) => {
 });
 
 refreshBtn.addEventListener("click", () => void loadProfiles(true));
+
+document.getElementById("pin-enable-auto")?.addEventListener("click", async (e) => {
+  e.preventDefault();
+  try {
+    const response = await chrome.runtime.sendMessage({ type: "set_config", urlPinningEnabled: true });
+    if (response?.success) {
+      setAutoRedirectNote(true);
+      showStatus("Auto-redirect turned on.", "success");
+    } else {
+      showStatus("Couldn't turn on auto-redirect.", "error");
+    }
+  } catch {
+    showStatus("Couldn't turn on auto-redirect.", "error");
+  }
+});
 
 void loadProfiles();

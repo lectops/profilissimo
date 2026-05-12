@@ -34,6 +34,7 @@ interface SetConfigRequest {
   closeSourceTab?: boolean;
   urlPinningEnabled?: boolean;
   pinnedRules?: PinnedRule[];
+  otherResidencesDismissed?: boolean;
 }
 
 export type NMHRequest =
@@ -56,6 +57,7 @@ export interface AppConfig {
   closeSourceTab: boolean;
   urlPinningEnabled: boolean;
   pinnedRules: PinnedRule[];
+  otherResidencesDismissed: boolean;
 }
 
 export interface NMHResponse {

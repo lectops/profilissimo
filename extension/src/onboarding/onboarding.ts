@@ -64,21 +64,21 @@ checkBtn.addEventListener("click", async () => {
 
     if (response?.connected) {
       statusDot.className = "dot connected";
-      statusText.textContent = "Connected";
+      statusText.textContent = "Helper app connected.";
       setTimeout(() => {
         void revealSuccess();
       }, 800);
     } else {
       statusDot.className = "dot disconnected";
-      statusText.textContent = "Not connected — check the install steps above";
+      statusText.textContent = "Not connected yet. Re-check the steps above.";
     }
   } catch {
     statusEl.classList.remove("hidden");
     statusDot.className = "dot disconnected";
-    statusText.textContent = "Not connected — check the install steps above";
+    statusText.textContent = "Not connected yet. Re-check the steps above.";
   } finally {
     checkBtn.disabled = false;
-    checkBtn.textContent = "Check Connection";
+    checkBtn.textContent = "Check connection";
   }
 });
 
@@ -96,9 +96,9 @@ async function revealSuccess(): Promise<void> {
 
   // Branch B: one last step. Compact the hero, swap the celebratory copy
   // for a "connected" pill, and lead with the multi-profile CTA.
-  hero.classList.remove("hero-large");
-  hero.classList.add("hero-compact");
-  heroTitle.textContent = "Profilissimo";
+  hero.classList.remove("hero--large");
+  hero.classList.add("hero--compact");
+  heroTitle.innerHTML = 'Profil<em class="issimo">issimo</em>';
   connectedPill.classList.remove("hidden");
 
   multiEntries = renderInstallList({
@@ -109,8 +109,8 @@ async function revealSuccess(): Promise<void> {
 
   installAllBtn.textContent =
     installableCount === 1
-      ? "Open Web Store in 1 other profile"
-      : `Open Web Store in ${installableCount} other profiles`;
+      ? "Open the Web Store in 1 other profile  →"
+      : `Open the Web Store in ${installableCount} other profiles  →`;
 
   successMulti.classList.remove("hidden");
 }

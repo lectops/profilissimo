@@ -3,126 +3,169 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Profilissimo Settings</title>
+  <title>Profilissimo — Settings</title>
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <div class="container">
-    <header class="options-header">
-      <img src="../../public/icons/p-logo.png" alt="" width="32" height="32" class="options-logo">
-      <h1>Settings</h1>
+  <div class="page">
+    <header class="page__header">
+      <div class="page__heading">
+        <h1 class="page__title">Settings</h1>
+      </div>
+      <div class="brandmark">
+        <span class="seal brandmark__seal" aria-hidden="true">p</span>
+        <span class="brandmark__text">
+          <span class="wordmark">Profil<span class="issimo">issimo</span></span>
+        </span>
+      </div>
     </header>
 
     <section class="section">
-      <div class="section-header">
-        <h2>Default Profile</h2>
-        <span class="scope-badge shared">Shared across profiles</span>
+      <div class="section__heading">
+        <span class="section__no">§ I.</span>
+        <h2 class="section__title">Default profile</h2>
+        <span class="pill pill--brass">shared across profiles</span>
       </div>
-      <p class="description">Used for keyboard shortcut and single-click transfers.</p>
-      <select id="default-profile">
-        <option value="">None (use last used)</option>
-      </select>
+      <p class="section__desc">For the keyboard shortcut <kbd id="shortcut-label">Alt+Shift+P</kbd> and one-click transfers.</p>
+      <div class="select-wrap">
+        <select id="default-profile">
+          <option value="">None — use last used</option>
+        </select>
+      </div>
+      <p class="section__desc section__desc--quiet"><a href="#" id="shortcut-link">Change shortcut in Chrome &rarr;</a></p>
     </section>
 
     <section class="section">
-      <div class="section-header">
-        <h2>Behavior</h2>
-        <span class="scope-badge shared">Shared across profiles</span>
+      <div class="section__heading">
+        <span class="section__no">§ II.</span>
+        <h2 class="section__title">Behavior</h2>
+        <span class="pill pill--brass">shared across profiles</span>
       </div>
       <label class="toggle-row">
-        <input type="checkbox" id="close-source-tab">
-        <span>Close source tab after transfer</span>
+        <span class="toggle">
+          <input type="checkbox" id="close-source-tab">
+          <span class="toggle__track" aria-hidden="true">
+            <span class="toggle__thumb"></span>
+          </span>
+        </span>
+        <span class="toggle-row__label">Close the source tab once the page is delivered</span>
       </label>
     </section>
 
     <section class="section">
-      <div class="section-header">
-        <h2>Pinned URLs</h2>
-        <span class="scope-badge shared">Shared across profiles</span>
+      <div class="section__heading">
+        <span class="section__no">§ III.</span>
+        <h2 class="section__title">Bound residences</h2>
+        <span class="pill pill--brass">shared across profiles</span>
       </div>
-      <p class="description">Auto-redirect specific sites to a designated profile. Matches the full hostname only.</p>
+      <p class="section__desc">Sites that always open in a particular profile, no matter where you open them.</p>
 
-      <div id="pinning-needs-update" class="pinning-needs-update hidden">
-        Update the helper app to enable URL pinning. See <a href="#nmh-status">Helper App</a> above.
+      <div id="pinning-needs-update" class="callout callout--warn hidden">
+        Update the helper app to enable URL pinning. See <a href="#nmh-status">The helper app</a> below.
       </div>
 
       <div id="pinning-section-body">
         <label class="toggle-row">
-          <input type="checkbox" id="url-pinning-toggle">
-          <span>Auto-redirect pinned URLs</span>
+          <span class="toggle">
+            <input type="checkbox" id="url-pinning-toggle">
+            <span class="toggle__track" aria-hidden="true">
+              <span class="toggle__thumb"></span>
+            </span>
+          </span>
+          <span class="toggle-row__label">Auto-redirect bound URLs</span>
         </label>
 
-        <div id="pinning-disclosure" class="pinning-disclosure hidden">
+        <div id="pinning-disclosure" class="callout callout--info hidden">
           Profilissimo will check the URLs you visit against your rules. Nothing leaves your machine.
         </div>
 
         <div id="pinning-body" class="pinning-body">
-          <table id="rules-table" class="rules-table hidden">
-            <thead>
-              <tr>
-                <th scope="col">Hostname</th>
-                <th scope="col">Profile</th>
-                <th scope="col" class="rules-actions-col"><span class="visually-hidden">Actions</span></th>
-              </tr>
-            </thead>
-            <tbody id="rules-tbody"></tbody>
-          </table>
+          <div class="rules">
+            <table id="rules-table" class="rules__table hidden">
+              <thead>
+                <tr>
+                  <th scope="col">Hostname</th>
+                  <th scope="col">Residence</th>
+                  <th scope="col" class="rules__actions-col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody id="rules-tbody"></tbody>
+            </table>
 
-          <p id="rules-empty" class="rules-empty">No rules yet. Add one below or right-click a page and pick "Always open this site in…".</p>
+            <p id="rules-empty" class="rules__empty">
+              <em>No bindings yet.</em> Add one below, or right-click any page and pick <em>&ldquo;Always open this site in&hellip;&rdquo;</em>.
+            </p>
+          </div>
 
-          <form id="add-rule-form" class="add-rule-form" novalidate>
+          <form id="add-rule-form" class="add-rule" novalidate>
             <input
               type="text"
               id="add-rule-pattern"
-              placeholder="hostname (e.g. mail.google.com)"
+              class="mono add-rule__pattern"
+              placeholder="hostname (e.g. notion.so)"
               autocomplete="off"
               spellcheck="false">
-            <select id="add-rule-profile">
-              <option value="">Choose profile…</option>
+            <select id="add-rule-profile" class="add-rule__profile">
+              <option value="">Choose profile&hellip;</option>
             </select>
-            <button type="submit" id="add-rule-btn" class="btn-primary">Add</button>
+            <button type="submit" id="add-rule-btn" class="btn btn--primary">Bind</button>
           </form>
-          <p id="add-rule-error" class="add-rule-error hidden"></p>
+          <p id="add-rule-error" class="add-rule__error hidden"></p>
         </div>
       </div>
     </section>
 
-    <section class="section">
-      <div class="section-header">
-        <h2>Keyboard Shortcut</h2>
-        <span class="scope-badge per-profile">Per profile</span>
-      </div>
-      <p class="description">
-        Current shortcut: <kbd id="shortcut-label">Alt+Shift+P</kbd>
-      </p>
-      <p class="description">
-        <a href="#" id="shortcut-link">Change in Chrome extension settings</a>
-      </p>
-    </section>
-
     <section id="nmh-status" class="section">
-      <h2>Helper App</h2>
-      <div class="nmh-status">
-        <span id="nmh-indicator" class="indicator"></span>
-        <span id="nmh-text">Checking…</span>
+      <div class="section__heading">
+        <span class="section__no">§ IV.</span>
+        <h2 class="section__title">The helper app</h2>
+        <span class="pill">this Mac only</span>
       </div>
-      <div id="nmh-version" class="nmh-version"></div>
-      <div id="nmh-action"></div>
+      <div id="nmh-card" class="nmh-card">
+        <span id="nmh-indicator" class="nmh-card__indicator" aria-hidden="true"></span>
+        <div class="nmh-card__body">
+          <div class="nmh-card__title">
+            <span id="nmh-text">Checking&hellip;</span>
+            <em id="nmh-version" class="nmh-card__version"></em>
+          </div>
+          <div class="nmh-card__path mono">~/.profilissimo/bin/profilissimo-nmh</div>
+        </div>
+        <div id="nmh-action" class="nmh-card__action"></div>
+      </div>
     </section>
 
-    <section id="other-profiles-section" class="section hidden">
-      <h2>Other profiles</h2>
-      <p class="description">Profilissimo runs separately in each Chrome profile. Open the Web Store in your other profiles so you can add it there too.</p>
-      <ul id="profile-install-list" class="profile-install-list"></ul>
-      <button id="install-all-btn" class="btn-primary install-all-btn">Open Web Store in other profiles</button>
-      <p id="install-status" class="install-status hidden"></p>
+    <section id="other-profiles-section" class="section section--collapsible hidden">
+      <button type="button" id="other-profiles-toggle" class="section__heading section__heading--toggle" aria-expanded="true" aria-controls="other-profiles-body">
+        <span class="section__no">§ V.</span>
+        <h2 class="section__title">Other residences</h2>
+        <span class="section__toggle-state">
+          <span class="section__toggle-state-text" id="other-profiles-toggle-label">Hide</span>
+          <span class="section__toggle-icon" aria-hidden="true">▾</span>
+        </span>
+      </button>
+      <div id="other-profiles-body" class="section__body">
+        <p class="section__desc">Profilissimo runs separately in each Chrome profile. Install it in your other profiles &mdash; just click <em>Add to Chrome</em>.</p>
+        <ul id="profile-install-list" class="install-list" role="list"></ul>
+        <button id="install-all-btn" class="btn btn--primary install-all-btn">Open the Web Store in other profiles &rarr;</button>
+        <p id="install-status" class="install-status hidden"></p>
+        <p class="other-profiles-dismiss">
+          <a href="#" id="other-profiles-dismiss-link">Already installed &mdash; hide this prompt &rarr;</a>
+        </p>
+      </div>
     </section>
 
-    <section class="section info-section">
-      <p class="info-text">The helper app only needs to be installed once &mdash; it works across every Chrome profile on this Mac.</p>
-    </section>
+    <footer class="page__footer">
+      <span class="ornament" aria-hidden="true">
+        <span class="ornament__rule"></span>
+        <span class="ornament__glyph">❦</span>
+        <span class="ornament__rule"></span>
+      </span>
+      <p class="page__signoff">The helper app is installed once and serves every Chrome profile on this Mac.</p>
+    </footer>
 
-    <div id="save-status" class="save-status hidden">Settings saved</div>
+    <div id="save-status" class="save-status hidden" role="status">
+      Saved.
+    </div>
   </div>
 
   <script type="module" src="options.ts"></script>

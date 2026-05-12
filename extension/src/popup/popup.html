@@ -7,44 +7,89 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="container">
-    <header class="header">
-      <h1 class="title">Profilissimo</h1>
-      <button id="settings-btn" class="icon-btn" title="Settings" aria-label="Settings">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-          <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/>
-          <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.421 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.421-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.116l.094-.318z"/>
-        </svg>
-      </button>
+  <div class="popup">
+    <header class="popup__header">
+      <div class="popup__header-row">
+        <div class="brandmark">
+          <span class="seal brandmark__seal" aria-hidden="true">p</span>
+          <span class="brandmark__text">
+            <span class="wordmark">Profil<span class="issimo">issimo</span></span>
+          </span>
+        </div>
+        <button id="settings-btn" class="btn btn--quiet popup__settings" title="Settings" aria-label="Settings">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.213-1.28Z" />
+            <circle cx="12" cy="12" r="3" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="current-page-card" class="popup__current-page hidden">
+        <span class="popup__favicon" id="current-favicon" aria-hidden="true"></span>
+        <span class="popup__url mono" id="current-url"></span>
+      </div>
     </header>
 
-    <div id="setup-prompt" class="setup-prompt hidden">
-      <p>Helper app not connected.</p>
-      <p class="setup-desc">Run this in Terminal, then restart Chrome:</p>
-      <button id="copy-install-btn" class="copy-install-btn">Copy install command</button>
-      <p class="setup-detail"><a href="#" id="setup-link">Full setup guide</a></p>
+    <div id="setup-prompt" class="popup__setup hidden">
+      <p class="popup__setup-quote">Helper app not connected yet.</p>
+      <p class="popup__setup-desc">The helper app isn&rsquo;t installed. Paste this in Terminal, then restart Chrome.</p>
+      <div class="popup__cmd">
+        <span class="mono popup__cmd-text">curl -fsSL …/install.sh | bash</span>
+        <button id="copy-install-btn" class="popup__cmd-copy">Copy</button>
+      </div>
+      <p class="popup__setup-link"><a href="#" id="setup-link">Full setup guide &rarr;</a></p>
     </div>
 
-    <div id="loading" class="loading hidden">
-      <div class="spinner"></div>
-      <span>Loading profiles…</span>
+    <div id="loading" class="popup__loading hidden">
+      <span class="popup__spinner" aria-hidden="true"></span>
+      <span>Loading profiles&hellip;</span>
     </div>
 
-    <ul id="profile-list" class="profile-list"></ul>
-
-    <div id="pin-section" class="pin-section hidden">
-      <p class="pin-picker-prompt">Always open <span id="pin-hostname" class="pin-hostname"></span> in:</p>
-      <ul id="pin-profile-list" class="pin-profile-list"></ul>
+    <div id="profile-section" class="popup__body">
+      <span class="eyebrow popup__section-label" id="profile-label">Open this page in</span>
+      <ul id="profile-list" class="popup__profile-list" role="list"></ul>
     </div>
 
-    <div id="status" class="status hidden"></div>
+    <div id="pin-section" class="popup__pin hidden">
+      <span class="eyebrow popup__section-label">Always open this site in&hellip;</span>
+      <div class="popup__pin-host mono" id="pin-hostname"></div>
+      <div class="popup__pin-tagline">always open this site in one profile.</div>
+      <ul id="pin-profile-list" class="popup__pin-list" role="list"></ul>
+      <div id="pin-auto-note" class="popup__pin-note hidden">
+        Pinning saves the rule. <a href="#" id="pin-enable-auto">Turn on auto-redirect &rarr;</a>
+      </div>
+    </div>
 
-    <button id="refresh-btn" class="refresh-btn" title="Refresh profiles" aria-label="Refresh profiles">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-        <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
-        <path d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
-      </svg>
-    </button>
+    <div id="transfer-state" class="popup__transfer hidden" aria-live="polite">
+      <div class="popup__transfer-stage">
+        <span class="chip popup__transfer-from" id="transfer-from-chip"></span>
+        <div class="popup__transfer-arrow" aria-hidden="true">
+          <svg width="40" height="14" viewBox="0 0 40 14" fill="none">
+            <path d="M0 7h36M30 2l6 5-6 5" stroke="var(--brass)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="popup__transfer-arrow-label">transferring</span>
+        </div>
+        <span class="chip popup__transfer-to" id="transfer-to-chip">
+          <span class="popup__transfer-halo" aria-hidden="true"></span>
+        </span>
+      </div>
+      <div class="popup__transfer-detail">opening in <span class="mono" id="transfer-target-name"></span></div>
+    </div>
+
+    <div id="status" class="popup__status hidden" role="status"></div>
+
+    <footer class="popup__footer">
+      <div class="popup__shortcut" id="shortcut-hint">
+        <span class="kbd">⌥</span><span class="kbd">⇧</span><span class="kbd">P</span>
+        <span class="popup__shortcut-text">open anywhere</span>
+      </div>
+      <button id="refresh-btn" class="btn btn--quiet popup__refresh" title="Refresh profiles" aria-label="Refresh profiles">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+          <path d="M11.534 7h3.932a.25.25 0 0 1 .192.41l-1.966 2.36a.25.25 0 0 1-.384 0l-1.966-2.36a.25.25 0 0 1 .192-.41zm-11 2h3.932a.25.25 0 0 0 .192-.41L2.692 6.23a.25.25 0 0 0-.384 0L.342 8.59A.25.25 0 0 0 .534 9z"/>
+          <path d="M8 3c-1.552 0-2.94.707-3.857 1.818a.5.5 0 1 1-.771-.636A6.002 6.002 0 0 1 13.917 7H12.9A5.002 5.002 0 0 0 8 3zM3.1 9a5.002 5.002 0 0 0 8.757 2.182.5.5 0 1 1 .771.636A6.002 6.002 0 0 1 2.083 9H3.1z"/>
+        </svg>
+      </button>
+    </footer>
   </div>
 
   <script type="module" src="popup.ts"></script>

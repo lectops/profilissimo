@@ -1,5 +1,5 @@
 import { $ } from "../utils/dom.js";
-import { profileLabel } from "../utils/format.js";
+import { applyChip } from "../utils/format.js";
 import { INSTALL_COMMAND, UNINSTALL_COMMAND, REQUIRED_NMH_VERSION, NMH_RELEASE_PAGE_URL } from "../utils/constants.js";
 import { isAtLeast } from "../utils/version.js";
 import { isValidPattern } from "../utils/pin-matcher.js";
@@ -25,6 +25,9 @@ const nmhVersion = $("nmh-version") as HTMLDivElement;
 const nmhAction = $("nmh-action") as HTMLDivElement;
 const saveStatusEl = $("save-status") as HTMLDivElement;
 const otherProfilesSection = $("other-profiles-section");
+const otherProfilesToggle = $("other-profiles-toggle") as HTMLButtonElement;
+const otherProfilesToggleLabel = $("other-profiles-toggle-label") as HTMLSpanElement;
+const otherProfilesDismissLink = $("other-profiles-dismiss-link") as HTMLAnchorElement;
 const installList = $("profile-install-list") as HTMLUListElement;
 const installAllBtn = $("install-all-btn") as HTMLButtonElement;
 const installStatus = $("install-status");
@@ -60,6 +63,7 @@ async function saveConfig(updates: {
   closeSourceTab?: boolean;
   urlPinningEnabled?: boolean;
   pinnedRules?: PinnedRule[];
+  otherResidencesDismissed?: boolean;
 }): Promise<void> {
   try {
     const response = await chrome.runtime.sendMessage({ type: "set_config", ...updates });
@@ -98,7 +102,7 @@ function createDownloadLink(): HTMLAnchorElement {
   a.href = NMH_RELEASE_PAGE_URL;
   a.target = "_blank";
   a.rel = "noopener noreferrer";
-  a.textContent = "Or download manually";
+  a.textContent = "Or download manually →";
   a.className = "helper-download-link";
   return a;
 }
@@ -107,23 +111,17 @@ function renderNmhAction(state: NmhState): void {
   nmhAction.replaceChildren();
 
   if (state === "connected-current") {
-    const btn = createCopyButton("Copy uninstall command", UNINSTALL_COMMAND);
+    const btn = createCopyButton("Copy uninstall", UNINSTALL_COMMAND);
     const hint = document.createElement("p");
-    hint.className = "description";
-    hint.style.marginTop = "6px";
-    hint.style.marginBottom = "0";
-    hint.textContent = "Paste in Terminal to remove the helper app.";
+    hint.textContent = "Paste in Terminal to uninstall the helper app.";
     nmhAction.appendChild(btn);
     nmhAction.appendChild(hint);
     return;
   }
 
   if (state === "connected-outdated") {
-    const btn = createCopyButton("Copy update command", INSTALL_COMMAND);
+    const btn = createCopyButton("Copy update", INSTALL_COMMAND);
     const hint = document.createElement("p");
-    hint.className = "description";
-    hint.style.marginTop = "6px";
-    hint.style.marginBottom = "0";
     hint.textContent = "An update is available. Paste in Terminal, then restart Chrome.";
     nmhAction.appendChild(btn);
     nmhAction.appendChild(hint);
@@ -132,22 +130,18 @@ function renderNmhAction(state: NmhState): void {
   }
 
   // disconnected
-  const btn = createCopyButton("Copy install command", INSTALL_COMMAND);
+  const btn = createCopyButton("Copy install", INSTALL_COMMAND);
   const hint = document.createElement("p");
-  hint.className = "description";
-  hint.style.marginTop = "6px";
-  hint.style.marginBottom = "0";
   hint.textContent = "Paste in Terminal, then restart Chrome.";
   nmhAction.appendChild(btn);
   nmhAction.appendChild(hint);
   nmhAction.appendChild(createDownloadLink());
 }
 
-function profileLookupByDirectory(directory: string): { label: string; available: boolean } {
-  const match = allProfiles.find((p) => p.directory === directory);
-  return match
-    ? { label: profileLabel(match), available: true }
-    : { label: directory, available: false };
+function profileLookupByDirectory(directory: string): { label: string; available: boolean; index: number } {
+  const idx = allProfiles.findIndex((p) => p.directory === directory);
+  if (idx === -1) return { label: directory, available: false, index: -1 };
+  return { label: allProfiles[idx].name, available: true, index: idx };
 }
 
 function renderRulesTable(): void {
@@ -168,23 +162,37 @@ function renderRulesTable(): void {
 
     const tdPattern = document.createElement("td");
     tdPattern.textContent = rule.pattern;
-    tdPattern.className = "rules-pattern";
+    tdPattern.className = "rules__pattern";
     tr.appendChild(tdPattern);
 
     const tdTarget = document.createElement("td");
     const lookup = profileLookupByDirectory(rule.targetProfileDirectory);
-    tdTarget.textContent = lookup.available ? lookup.label : `${lookup.label} (unavailable)`;
-    if (!lookup.available) {
-      tdTarget.classList.add("rules-target-unavailable");
+    const targetWrap = document.createElement("span");
+    targetWrap.className = "rules__target";
+
+    if (lookup.available) {
+      const chip = document.createElement("span");
+      chip.classList.add("rules__target-chip");
+      applyChip(chip, allProfiles[lookup.index], lookup.index);
+      targetWrap.appendChild(chip);
+
+      const name = document.createElement("span");
+      name.textContent = lookup.label;
+      targetWrap.appendChild(name);
+    } else {
+      targetWrap.classList.add("rules__target-unavailable");
+      targetWrap.textContent = `${lookup.label} (unavailable)`;
     }
+
+    tdTarget.appendChild(targetWrap);
     tr.appendChild(tdTarget);
 
     const tdActions = document.createElement("td");
-    tdActions.className = "rules-actions-col";
+    tdActions.className = "rules__actions-col";
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
     removeBtn.className = "rule-remove-btn";
-    removeBtn.textContent = "Remove";
+    removeBtn.textContent = "remove";
     removeBtn.setAttribute("aria-label", `Remove rule for ${rule.pattern}`);
     removeBtn.addEventListener("click", () => void removeRule(rule.id));
     tdActions.appendChild(removeBtn);
@@ -200,7 +208,7 @@ function refreshAddRuleProfileOptions(): void {
   for (const profile of allProfiles) {
     const option = document.createElement("option");
     option.value = profile.directory;
-    option.textContent = profileLabel(profile);
+    option.textContent = profile.name;
     addRuleProfile.appendChild(option);
   }
 }
@@ -309,7 +317,9 @@ async function init(): Promise<void> {
       for (const profile of allProfiles) {
         const option = document.createElement("option");
         option.value = profile.directory;
-        option.textContent = profileLabel(profile);
+        option.textContent = profile.email
+          ? `${profile.name} — ${profile.email}`
+          : profile.name;
         defaultProfileSelect.appendChild(option);
       }
       refreshAddRuleProfileOptions();
@@ -319,6 +329,7 @@ async function init(): Promise<void> {
   }
 
   // Load shared config from NMH
+  let otherResidencesDismissed = false;
   try {
     const configResponse = await chrome.runtime.sendMessage({ type: "get_config" });
     if (configResponse?.success && configResponse.config) {
@@ -334,6 +345,7 @@ async function init(): Promise<void> {
       pinnedRulesState = Array.isArray(configResponse.config.pinnedRules)
         ? configResponse.config.pinnedRules
         : [];
+      otherResidencesDismissed = configResponse.config.otherResidencesDismissed === true;
     }
   } catch {
     // NMH config not available
@@ -372,13 +384,13 @@ async function init(): Promise<void> {
     ? "connected-current"
     : "connected-outdated";
 
-  nmhIndicator.className = `indicator ${connected ? (upToDate ? "connected" : "outdated") : "disconnected"}`;
+  nmhIndicator.className = `nmh-card__indicator ${connected ? (upToDate ? "connected" : "outdated") : "disconnected"}`;
   nmhText.textContent = !connected
     ? "Not connected"
     : upToDate
     ? "Connected"
     : "Connected — update available";
-  nmhVersion.textContent = version ? `v${version}` : "";
+  nmhVersion.textContent = version ? `— v${version}` : "";
   renderNmhAction(nmhState);
 
   // Gate the Pinned URLs interactive UI on NMH version. On 1.0.0 NMH the
@@ -387,11 +399,11 @@ async function init(): Promise<void> {
   applyNmhVersionGate(connected && upToDate);
 
   if (connected) {
-    await initOtherProfilesSection();
+    await initOtherProfilesSection(otherResidencesDismissed);
   }
 }
 
-async function initOtherProfilesSection(): Promise<void> {
+async function initOtherProfilesSection(dismissed: boolean): Promise<void> {
   const result = await fetchInstallableProfiles();
   if (!result || result.installable.length === 0) return;
 
@@ -403,10 +415,17 @@ async function initOtherProfilesSection(): Promise<void> {
 
   installAllBtn.textContent =
     result.installable.length === 1
-      ? "Open Web Store in 1 other profile"
-      : `Open Web Store in ${result.installable.length} other profiles`;
+      ? "Open the Web Store in 1 other profile  →"
+      : `Open the Web Store in ${result.installable.length} other profiles  →`;
 
+  setOtherProfilesCollapsed(dismissed);
   otherProfilesSection.classList.remove("hidden");
+}
+
+function setOtherProfilesCollapsed(collapsed: boolean): void {
+  otherProfilesSection.classList.toggle("section--collapsed", collapsed);
+  otherProfilesToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  otherProfilesToggleLabel.textContent = collapsed ? "Show" : "Hide";
 }
 
 installAllBtn.addEventListener("click", async () => {
@@ -431,6 +450,21 @@ installAllBtn.addEventListener("click", async () => {
 shortcutLink.addEventListener("click", (e) => {
   e.preventDefault();
   chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+});
+
+// Other residences accordion + dismissal. The collapse state isn't persisted —
+// it only persists once the user explicitly says "I've done that already" via
+// the dismiss link, which writes otherResidencesDismissed to NMH config so the
+// section starts collapsed in every profile thereafter.
+otherProfilesToggle.addEventListener("click", () => {
+  const collapsed = otherProfilesSection.classList.contains("section--collapsed");
+  setOtherProfilesCollapsed(!collapsed);
+});
+
+otherProfilesDismissLink.addEventListener("click", (e) => {
+  e.preventDefault();
+  setOtherProfilesCollapsed(true);
+  void saveConfig({ otherResidencesDismissed: true });
 });
 
 // Auto-save on change

@@ -8,6 +8,7 @@ export interface AppConfig {
   closeSourceTab: boolean;
   urlPinningEnabled: boolean;
   pinnedRules: PinnedRule[];
+  otherResidencesDismissed: boolean;
 }
 
 const CONFIG_DIR = join(homedir(), ".profilissimo");
@@ -18,6 +19,7 @@ const DEFAULT_CONFIG: AppConfig = {
   closeSourceTab: false,
   urlPinningEnabled: false,
   pinnedRules: [],
+  otherResidencesDismissed: false,
 };
 
 function readPinnedRules(value: unknown): PinnedRule[] {
@@ -46,6 +48,10 @@ export async function readConfig(): Promise<AppConfig> {
       urlPinningEnabled:
         typeof parsed.urlPinningEnabled === "boolean" ? parsed.urlPinningEnabled : false,
       pinnedRules: readPinnedRules(parsed.pinnedRules),
+      otherResidencesDismissed:
+        typeof parsed.otherResidencesDismissed === "boolean"
+          ? parsed.otherResidencesDismissed
+          : false,
     };
   } catch {
     return { ...DEFAULT_CONFIG, pinnedRules: [] };
