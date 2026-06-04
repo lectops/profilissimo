@@ -5,6 +5,7 @@ import type { PinnedRule } from "./schema.js";
 
 export interface AppConfig {
   defaultProfile: string | null;
+  defaultProfileEmail: string | null;
   closeSourceTab: boolean;
   urlPinningEnabled: boolean;
   pinnedRules: PinnedRule[];
@@ -16,6 +17,7 @@ const CONFIG_PATH = join(CONFIG_DIR, "config.json");
 
 const DEFAULT_CONFIG: AppConfig = {
   defaultProfile: null,
+  defaultProfileEmail: null,
   closeSourceTab: false,
   urlPinningEnabled: false,
   pinnedRules: [],
@@ -43,6 +45,8 @@ export async function readConfig(): Promise<AppConfig> {
     return {
       defaultProfile:
         typeof parsed.defaultProfile === "string" ? parsed.defaultProfile : null,
+      defaultProfileEmail:
+        typeof parsed.defaultProfileEmail === "string" ? parsed.defaultProfileEmail : null,
       closeSourceTab:
         typeof parsed.closeSourceTab === "boolean" ? parsed.closeSourceTab : false,
       urlPinningEnabled:

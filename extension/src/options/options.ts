@@ -4,7 +4,7 @@ import { INSTALL_COMMAND, UNINSTALL_COMMAND, REQUIRED_NMH_VERSION, NMH_RELEASE_P
 import { isAtLeast } from "../utils/version.js";
 import { isValidPattern } from "../utils/pin-matcher.js";
 import { uuid } from "../utils/uuid.js";
-import type { PinnedRule, ProfileInfo } from "../types/messages.js";
+import type { AppConfig, PinnedRule, ProfileInfo } from "../types/messages.js";
 import {
   fetchInstallableProfiles,
   renderInstallList,
@@ -46,6 +46,11 @@ const addRuleProfile = $("add-rule-profile") as HTMLSelectElement;
 const addRuleBtn = $("add-rule-btn") as HTMLButtonElement;
 const addRuleError = $("add-rule-error") as HTMLParagraphElement;
 
+const exportBtn = $("export-btn") as HTMLButtonElement;
+const importBtn = $("import-btn") as HTMLButtonElement;
+const importFile = $("import-file") as HTMLInputElement;
+const backupStatus = $("backup-status") as HTMLParagraphElement;
+
 let multiEntries: RowEntry[] = [];
 let pinnedRulesState: PinnedRule[] = [];
 let allProfiles: ProfileInfo[] = [];
@@ -60,6 +65,7 @@ function showSaved(): void {
 
 async function saveConfig(updates: {
   defaultProfile?: string | null;
+  defaultProfileEmail?: string | null;
   closeSourceTab?: boolean;
   urlPinningEnabled?: boolean;
   pinnedRules?: PinnedRule[];
@@ -144,6 +150,17 @@ function profileLookupByDirectory(directory: string): { label: string; available
   return { label: allProfiles[idx].name, available: true, index: idx };
 }
 
+// Resolve a rule to a profile for display, preferring the account email (the
+// portable identity) over the stored directory. Rules created before email
+// capture, or whose account is signed out, fall back to directory matching.
+function profileLookupForRule(rule: PinnedRule): { label: string; available: boolean; index: number } {
+  if (rule.targetProfileEmail) {
+    const idx = allProfiles.findIndex((p) => p.email === rule.targetProfileEmail);
+    if (idx !== -1) return { label: allProfiles[idx].name, available: true, index: idx };
+  }
+  return profileLookupByDirectory(rule.targetProfileDirectory);
+}
+
 function renderRulesTable(): void {
   rulesTbody.replaceChildren();
   const sorted = [...pinnedRulesState].sort((a, b) => a.createdAt - b.createdAt);
@@ -166,7 +183,7 @@ function renderRulesTable(): void {
     tr.appendChild(tdPattern);
 
     const tdTarget = document.createElement("td");
-    const lookup = profileLookupByDirectory(rule.targetProfileDirectory);
+    const lookup = profileLookupForRule(rule);
     const targetWrap = document.createElement("span");
     targetWrap.className = "rules__target";
 
@@ -278,12 +295,14 @@ async function handleAddRule(event: Event): Promise<void> {
     return;
   }
 
+  const targetEmail = allProfiles.find((p) => p.directory === targetDir)?.email;
   pinnedRulesState = [
     ...pinnedRulesState,
     {
       id: uuid(),
       pattern,
       targetProfileDirectory: targetDir,
+      ...(targetEmail ? { targetProfileEmail: targetEmail } : {}),
       createdAt: Date.now(),
     },
   ];
@@ -333,10 +352,26 @@ async function init(): Promise<void> {
   try {
     const configResponse = await chrome.runtime.sendMessage({ type: "get_config" });
     if (configResponse?.success && configResponse.config) {
-      if (configResponse.config.defaultProfile) {
-        defaultProfileSelect.value = configResponse.config.defaultProfile;
+      const cfg = configResponse.config;
+      const emailMatch = cfg.defaultProfileEmail
+        ? allProfiles.find((p) => p.email === cfg.defaultProfileEmail)
+        : undefined;
+      if (emailMatch) {
+        // Email is the source of truth — point the select at wherever that
+        // account currently lives, and re-heal the stored directory if it
+        // drifted (e.g. after a machine migration).
+        defaultProfileSelect.value = emailMatch.directory;
+        if (cfg.defaultProfile !== emailMatch.directory) {
+          await chrome.runtime.sendMessage({
+            type: "set_config",
+            defaultProfile: emailMatch.directory,
+            defaultProfileEmail: emailMatch.email,
+          });
+        }
+      } else if (cfg.defaultProfile) {
+        defaultProfileSelect.value = cfg.defaultProfile;
         // Clear if profile no longer exists in the dropdown
-        if (defaultProfileSelect.value !== configResponse.config.defaultProfile) {
+        if (defaultProfileSelect.value !== cfg.defaultProfile) {
           await chrome.runtime.sendMessage({ type: "set_config", defaultProfile: null });
         }
       }
@@ -468,11 +503,205 @@ otherProfilesDismissLink.addEventListener("click", (e) => {
 });
 
 // Auto-save on change
-defaultProfileSelect.addEventListener("change", () => void saveConfig({ defaultProfile: defaultProfileSelect.value || null }));
+defaultProfileSelect.addEventListener("change", () => {
+  const dir = defaultProfileSelect.value || null;
+  const email = dir ? (allProfiles.find((p) => p.directory === dir)?.email ?? null) : null;
+  void saveConfig({ defaultProfile: dir, defaultProfileEmail: email });
+});
 closeSourceTab.addEventListener("change", () => void saveConfig({ closeSourceTab: closeSourceTab.checked }));
 
 pinningToggle.addEventListener("change", () => void handlePinningToggleChange());
 addRuleForm.addEventListener("submit", (event) => void handleAddRule(event));
 addRulePattern.addEventListener("input", clearAddRuleError);
+
+// --- Backup & restore ---
+
+const BACKUP_TYPE = "profilissimo-settings";
+const PROFILE_DIR_RE = /^[a-zA-Z0-9 _-]+$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+interface BackupFile {
+  type: string;
+  schema: number;
+  exportedAt: string;
+  settings: Record<string, unknown>;
+}
+
+function showBackupStatus(message: string, kind: "success" | "error" | "info"): void {
+  backupStatus.textContent = message;
+  backupStatus.classList.remove("hidden", "success", "error");
+  if (kind !== "info") backupStatus.classList.add(kind);
+}
+
+async function exportSettings(): Promise<void> {
+  let config: AppConfig | undefined;
+  try {
+    const resp = await chrome.runtime.sendMessage({ type: "get_config" });
+    if (resp?.success && resp.config) config = resp.config as AppConfig;
+  } catch {
+    // fall through to the error message below
+  }
+  if (!config) {
+    showBackupStatus("Couldn't read your settings — is the helper app connected?", "error");
+    return;
+  }
+
+  const payload: BackupFile = {
+    type: BACKUP_TYPE,
+    schema: 1,
+    exportedAt: new Date().toISOString(),
+    settings: {
+      defaultProfile: config.defaultProfile,
+      defaultProfileEmail: config.defaultProfileEmail,
+      closeSourceTab: config.closeSourceTab,
+      urlPinningEnabled: config.urlPinningEnabled,
+      pinnedRules: config.pinnedRules,
+      otherResidencesDismissed: config.otherResidencesDismissed,
+    },
+  };
+
+  const stamp = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `profilissimo-settings-${stamp}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  const n = config.pinnedRules.length;
+  showBackupStatus(`Exported your settings and ${n} binding${n === 1 ? "" : "s"}.`, "success");
+}
+
+// Re-point an imported target's directory to wherever its account currently
+// lives on THIS machine. The email is the portable key; the stored directory
+// is only a fallback that's likely stale on a different Mac.
+function rehealDirectory(email: string | undefined, fallback: string): string {
+  if (email) {
+    const match = allProfiles.find((p) => p.email === email);
+    if (match) return match.directory;
+  }
+  return fallback;
+}
+
+// Validate an imported rule against the same constraints the helper app
+// enforces, so a single malformed entry can't fail the whole import. Returns
+// null (and gets counted as skipped) when the rule can't be salvaged.
+function importableRule(value: unknown): PinnedRule | null {
+  if (typeof value !== "object" || value === null) return null;
+  const r = value as Record<string, unknown>;
+  if (typeof r.id !== "string" || r.id.length === 0 || r.id.length > 64) return null;
+  if (typeof r.pattern !== "string" || !isValidPattern(r.pattern)) return null;
+  if (typeof r.targetProfileDirectory !== "string" || !PROFILE_DIR_RE.test(r.targetProfileDirectory)) return null;
+  if (typeof r.createdAt !== "number" || !Number.isFinite(r.createdAt)) return null;
+  const email = typeof r.targetProfileEmail === "string" && EMAIL_RE.test(r.targetProfileEmail) ? r.targetProfileEmail : undefined;
+  const rule: PinnedRule = {
+    id: r.id,
+    pattern: r.pattern,
+    targetProfileDirectory: rehealDirectory(email, r.targetProfileDirectory),
+    createdAt: r.createdAt,
+  };
+  if (email) rule.targetProfileEmail = email;
+  return rule;
+}
+
+async function importSettings(file: File): Promise<void> {
+  let text: string;
+  try {
+    text = await file.text();
+  } catch {
+    showBackupStatus("Couldn't read that file.", "error");
+    return;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    showBackupStatus("That file isn't valid JSON.", "error");
+    return;
+  }
+
+  const wrapper = parsed as Partial<BackupFile> | null;
+  if (!wrapper || wrapper.type !== BACKUP_TYPE || typeof wrapper.settings !== "object" || wrapper.settings === null) {
+    showBackupStatus("That doesn't look like a Profilissimo settings file.", "error");
+    return;
+  }
+
+  const s = wrapper.settings as Record<string, unknown>;
+
+  const rawRules = Array.isArray(s.pinnedRules) ? s.pinnedRules : [];
+  const rules: PinnedRule[] = [];
+  let dropped = 0;
+  for (const raw of rawRules) {
+    const rule = importableRule(raw);
+    if (rule) rules.push(rule);
+    else dropped++;
+  }
+
+  const defaultProfileEmail =
+    typeof s.defaultProfileEmail === "string" && EMAIL_RE.test(s.defaultProfileEmail) ? s.defaultProfileEmail : null;
+  let defaultProfile =
+    typeof s.defaultProfile === "string" && PROFILE_DIR_RE.test(s.defaultProfile) ? s.defaultProfile : null;
+  if (defaultProfileEmail) {
+    const match = allProfiles.find((p) => p.email === defaultProfileEmail);
+    if (match) defaultProfile = match.directory;
+  }
+
+  const closeSrc = typeof s.closeSourceTab === "boolean" ? s.closeSourceTab : undefined;
+  const pinning = typeof s.urlPinningEnabled === "boolean" ? s.urlPinningEnabled : undefined;
+  const dismissed = typeof s.otherResidencesDismissed === "boolean" ? s.otherResidencesDismissed : undefined;
+
+  const n = rules.length;
+  if (!window.confirm(`Import will replace your current settings with ${n} binding${n === 1 ? "" : "s"} from this file. Continue?`)) {
+    showBackupStatus("Import cancelled.", "info");
+    return;
+  }
+
+  const update: {
+    defaultProfile: string | null;
+    defaultProfileEmail: string | null;
+    pinnedRules: PinnedRule[];
+    closeSourceTab?: boolean;
+    urlPinningEnabled?: boolean;
+    otherResidencesDismissed?: boolean;
+  } = { defaultProfile, defaultProfileEmail, pinnedRules: rules };
+  if (closeSrc !== undefined) update.closeSourceTab = closeSrc;
+  if (pinning !== undefined) update.urlPinningEnabled = pinning;
+  if (dismissed !== undefined) update.otherResidencesDismissed = dismissed;
+
+  let resp: { success?: boolean; error?: string } | undefined;
+  try {
+    resp = await chrome.runtime.sendMessage({ type: "set_config", ...update });
+  } catch {
+    showBackupStatus("Import failed — couldn't reach the helper app.", "error");
+    return;
+  }
+  if (!resp?.success) {
+    showBackupStatus(`Import failed: ${resp?.error ?? "unknown error"}.`, "error");
+    return;
+  }
+
+  // Reflect the imported state in the UI without a full page reload.
+  pinnedRulesState = rules;
+  if (closeSrc !== undefined) closeSourceTab.checked = closeSrc;
+  if (pinning !== undefined) pinningToggle.checked = pinning;
+  defaultProfileSelect.value = defaultProfile ?? "";
+  renderRulesTable();
+  applyPinningEnabledState(pinningToggle.checked);
+
+  const tail = dropped > 0 ? ` (${dropped} invalid binding${dropped === 1 ? "" : "s"} skipped)` : "";
+  showBackupStatus(`Imported ${n} binding${n === 1 ? "" : "s"}${tail}.`, "success");
+}
+
+exportBtn.addEventListener("click", () => void exportSettings());
+importBtn.addEventListener("click", () => importFile.click());
+importFile.addEventListener("change", () => {
+  const file = importFile.files?.[0];
+  importFile.value = ""; // reset so the same file can be re-imported
+  if (file) void importSettings(file);
+});
 
 void init();

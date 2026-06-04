@@ -74,6 +74,7 @@ export async function openProfile(targetProfile: string): Promise<NMHResponse> {
 
 const DEFAULT_CONFIG: AppConfig = {
   defaultProfile: null,
+  defaultProfileEmail: null,
   closeSourceTab: false,
   urlPinningEnabled: false,
   pinnedRules: [],
@@ -87,6 +88,7 @@ export async function getConfig(): Promise<AppConfig> {
 
 export async function setConfig(updates: {
   defaultProfile?: string | null;
+  defaultProfileEmail?: string | null;
   closeSourceTab?: boolean;
   urlPinningEnabled?: boolean;
   pinnedRules?: PinnedRule[];

@@ -31,13 +31,15 @@ export interface GetConfigRequest {
 export interface PinnedRule {
   id: string;
   pattern: string;                // exact hostname, lowercase
-  targetProfileDirectory: string;
+  targetProfileDirectory: string; // last-known directory; fallback when email can't be resolved
+  targetProfileEmail?: string;    // account email — portable target that survives migrations/renames
   createdAt: number;
 }
 
 export interface SetConfigRequest {
   action: "set_config";
   defaultProfile?: string | null;
+  defaultProfileEmail?: string | null; // account email for the keyboard-shortcut target
   closeSourceTab?: boolean;
   urlPinningEnabled?: boolean;
   pinnedRules?: PinnedRule[];
@@ -63,6 +65,7 @@ export interface NMHResponse {
   profiles?: ProfileInfo[];
   config?: {
     defaultProfile: string | null;
+    defaultProfileEmail: string | null;
     closeSourceTab: boolean;
     urlPinningEnabled: boolean;
     pinnedRules: PinnedRule[];
@@ -92,6 +95,22 @@ export const PROFILE_DIR_PATTERN = /^[a-zA-Z0-9 _-]+$/;
 const MAX_PINNED_RULES = 500;
 const MAX_PATTERN_LENGTH = 253;        // RFC 1035 max hostname length
 const MAX_RULE_ID_LENGTH = 64;
+const MAX_EMAIL_LENGTH = 254;          // RFC 5321 max email length
+
+// Loose email shape check. Chrome stores the signed-in account email in
+// `user_name`; we only persist it as a routing key, never display or trust it
+// for anything privileged, so an exact RFC validator would be overkill — we
+// just reject control characters, whitespace, and obviously-malformed values.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function isValidProfileEmail(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length > 0 &&
+    value.length <= MAX_EMAIL_LENGTH &&
+    EMAIL_PATTERN.test(value)
+  );
+}
 
 // Hostname validation: lowercase letters, digits, hyphens, dots; must look
 // like a real domain (no leading/trailing dots, no consecutive dots, no empty
@@ -105,6 +124,7 @@ function isValidPinnedRule(value: unknown): value is PinnedRule {
   if (typeof r.pattern !== "string" || r.pattern.length === 0 || r.pattern.length > MAX_PATTERN_LENGTH) return false;
   if (!HOSTNAME_PATTERN.test(r.pattern)) return false;
   if (typeof r.targetProfileDirectory !== "string" || !PROFILE_DIR_PATTERN.test(r.targetProfileDirectory)) return false;
+  if (r.targetProfileEmail !== undefined && !isValidProfileEmail(r.targetProfileEmail)) return false;
   if (typeof r.createdAt !== "number" || !Number.isFinite(r.createdAt)) return false;
   return true;
 }
@@ -189,6 +209,9 @@ export function validateRequest(data: unknown): { valid: true; request: NMHReque
     if (typeof obj.defaultProfile === "string" && !isValidProfileDirectory(obj.defaultProfile)) {
       return { valid: false, error: "set_config: 'defaultProfile' contains invalid characters" };
     }
+    if (obj.defaultProfileEmail !== undefined && obj.defaultProfileEmail !== null && !isValidProfileEmail(obj.defaultProfileEmail)) {
+      return { valid: false, error: "set_config: 'defaultProfileEmail' must be a valid email or null" };
+    }
     if (obj.closeSourceTab !== undefined && typeof obj.closeSourceTab !== "boolean") {
       return { valid: false, error: "set_config: 'closeSourceTab' must be a boolean" };
     }
@@ -212,6 +235,9 @@ export function validateRequest(data: unknown): { valid: true; request: NMHReque
     const request: SetConfigRequest = { action: "set_config" };
     if (obj.defaultProfile !== undefined) {
       request.defaultProfile = typeof obj.defaultProfile === "string" ? obj.defaultProfile : null;
+    }
+    if (obj.defaultProfileEmail !== undefined) {
+      request.defaultProfileEmail = typeof obj.defaultProfileEmail === "string" ? obj.defaultProfileEmail : null;
     }
     if (typeof obj.closeSourceTab === "boolean") {
       request.closeSourceTab = obj.closeSourceTab;

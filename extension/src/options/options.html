@@ -134,9 +134,24 @@
       </div>
     </section>
 
+    <section class="section">
+      <div class="section__heading">
+        <span class="section__no">§ V.</span>
+        <h2 class="section__title">Backup &amp; restore</h2>
+        <span class="pill pill--brass">shared across profiles</span>
+      </div>
+      <p class="section__desc">Save your settings to a file, or restore them on another Mac. Bindings are matched by account email, so they follow your accounts even when Chrome assigns them different profile slots.</p>
+      <div class="backup-actions">
+        <button type="button" id="export-btn" class="btn btn--primary">Export settings&hellip;</button>
+        <button type="button" id="import-btn" class="btn btn--ghost">Import settings&hellip;</button>
+        <input type="file" id="import-file" accept="application/json,.json" hidden>
+      </div>
+      <p id="backup-status" class="backup-status hidden"></p>
+    </section>
+
     <section id="other-profiles-section" class="section section--collapsible hidden">
       <button type="button" id="other-profiles-toggle" class="section__heading section__heading--toggle" aria-expanded="true" aria-controls="other-profiles-body">
-        <span class="section__no">§ V.</span>
+        <span class="section__no">§ VI.</span>
         <h2 class="section__title">Other residences</h2>
         <span class="section__toggle-state">
           <span class="section__toggle-state-text" id="other-profiles-toggle-label">Hide</span>

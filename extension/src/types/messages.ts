@@ -25,12 +25,14 @@ export interface PinnedRule {
   id: string;
   pattern: string;
   targetProfileDirectory: string;
+  targetProfileEmail?: string;
   createdAt: number;
 }
 
 interface SetConfigRequest {
   action: "set_config";
   defaultProfile?: string | null;
+  defaultProfileEmail?: string | null;
   closeSourceTab?: boolean;
   urlPinningEnabled?: boolean;
   pinnedRules?: PinnedRule[];
@@ -54,6 +56,7 @@ export interface ProfileInfo {
 
 export interface AppConfig {
   defaultProfile: string | null;
+  defaultProfileEmail: string | null;
   closeSourceTab: boolean;
   urlPinningEnabled: boolean;
   pinnedRules: PinnedRule[];

@@ -153,6 +153,7 @@ async function handleMessage(raw: Buffer): Promise<NMHResponse> {
       try {
         const updates: Record<string, unknown> = {};
         if (request.defaultProfile !== undefined) updates.defaultProfile = request.defaultProfile;
+        if (request.defaultProfileEmail !== undefined) updates.defaultProfileEmail = request.defaultProfileEmail;
         if (request.closeSourceTab !== undefined) updates.closeSourceTab = request.closeSourceTab;
         if (request.urlPinningEnabled !== undefined) updates.urlPinningEnabled = request.urlPinningEnabled;
         if (request.otherResidencesDismissed !== undefined) updates.otherResidencesDismissed = request.otherResidencesDismissed;

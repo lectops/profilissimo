@@ -314,7 +314,11 @@ function renderPinPicker(profiles: ProfileInfo[], existing: PinnedRule | undefin
 
   profiles.forEach((profile, index) => {
     const isCurrent = profile.directory === currentDir;
-    const isSelected = !!(existing && existing.targetProfileDirectory === profile.directory);
+    // Match the existing pin by account email when available (survives
+    // directory drift), falling back to the stored directory.
+    const isSelected = !!(existing && (existing.targetProfileEmail
+      ? existing.targetProfileEmail === profile.email
+      : existing.targetProfileDirectory === profile.directory));
 
     const li = document.createElement("li");
     li.className = isSelected ? "pin-row pin-row--selected" : "pin-row";
@@ -381,6 +385,7 @@ function renderPinPicker(profiles: ProfileInfo[], existing: PinnedRule | undefin
 
 async function savePin(targetDir: string): Promise<void> {
   if (!currentTabHostname) return;
+  const targetEmail = cachedProfiles.find((p) => p.directory === targetDir)?.email;
   const filtered = cachedPinnedRules.filter((r) => r.pattern !== currentTabHostname);
   const updated: PinnedRule[] = [
     ...filtered,
@@ -388,6 +393,7 @@ async function savePin(targetDir: string): Promise<void> {
       id: uuid(),
       pattern: currentTabHostname,
       targetProfileDirectory: targetDir,
+      ...(targetEmail ? { targetProfileEmail: targetEmail } : {}),
       createdAt: Date.now(),
     },
   ];

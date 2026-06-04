@@ -25,6 +25,31 @@ async function getCurrentProfileEmail(): Promise<string | null> {
   }
 }
 
+// Resolve a *stored* routing target (pinned rule or default profile) to the
+// directory that currently hosts that account on THIS machine. We persist the
+// account email as the portable identifier plus a last-known directory as a
+// fallback. Chrome can only launch by directory, so at action time we map
+// email → current directory via the live profile list. This is what lets a
+// rule survive a machine migration or profile rename/renumber: the email is
+// re-resolved against wherever the account now lives. Falls back to the stored
+// directory when the email is absent or its account isn't currently present
+// (signed out / removed).
+async function resolveTargetDirectory(
+  email: string | null | undefined,
+  fallbackDirectory: string,
+): Promise<string> {
+  if (email) {
+    try {
+      const profiles = await getProfiles();
+      const match = profiles.find((p) => p.email === email);
+      if (match) return match.directory;
+    } catch {
+      // Live profile list unavailable — fall back to last-known directory.
+    }
+  }
+  return fallbackDirectory;
+}
+
 // --- URL pinning state ---
 //
 // Cached in module memory to keep onBeforeNavigate fast. `pinningEnabled` and
@@ -288,17 +313,21 @@ chrome.webNavigation.onBeforeNavigate.addListener(async (details) => {
   rule = findMatchingRule(details.url, pinnedRules);
   if (!rule) return;
 
+  // Resolve the rule's account email to the directory that currently hosts it.
+  // Directories drift across machines/renames; the email is the stable key.
+  const targetDir = await resolveTargetDirectory(rule.targetProfileEmail, rule.targetProfileDirectory);
+
   // Loop guard: if we're already in the target profile, don't redirect.
   // Skip defensively when the current directory is unknown — better to miss
   // a redirect than to create an infinite loop.
   const currentDir = await getCurrentProfileDirectory();
   if (!currentDir) return;
-  if (currentDir === rule.targetProfileDirectory) return;
+  if (currentDir === targetDir) return;
 
   if (!nmhSupportsExtendedTransfer) return;
 
   try {
-    const response = await openUrlInProfile(details.url, rule.targetProfileDirectory);
+    const response = await openUrlInProfile(details.url, targetDir);
     if (response.success) {
       await safeCloseTab(details.tabId);
     } else {
@@ -397,6 +426,16 @@ async function handleAddPinFromContextMenu(
     return;
   }
 
+  // Capture the account email for the chosen profile so the rule is keyed on a
+  // portable identifier, not just the (machine-local) directory.
+  let targetEmail: string | undefined;
+  try {
+    const profiles = await getProfiles();
+    targetEmail = profiles.find((p) => p.directory === profileDir)?.email;
+  } catch {
+    // Live list unavailable — store directory only; email backfills on next edit.
+  }
+
   // Replace any existing rule with the same pattern so a second click on a
   // different profile updates the target instead of creating a duplicate.
   const filtered = pinnedRules.filter((r) => r.pattern !== hostname);
@@ -406,6 +445,7 @@ async function handleAddPinFromContextMenu(
       id: uuid(),
       pattern: hostname,
       targetProfileDirectory: profileDir,
+      ...(targetEmail ? { targetProfileEmail: targetEmail } : {}),
       createdAt: Date.now(),
     },
   ];
@@ -438,7 +478,9 @@ chrome.commands.onCommand.addListener(async (command) => {
   let targetProfile: string | null = null;
   try {
     const config = await getConfig();
-    targetProfile = config.defaultProfile;
+    // Prefer the account email; fall back to the stored directory.
+    const resolved = await resolveTargetDirectory(config.defaultProfileEmail, config.defaultProfile ?? "");
+    targetProfile = resolved || config.defaultProfile;
   } catch {
     // NMH config not available
   }
@@ -489,6 +531,7 @@ interface GetConfigMessage {
 interface SetConfigMessage {
   type: "set_config";
   defaultProfile?: string | null;
+  defaultProfileEmail?: string | null;
   closeSourceTab?: boolean;
   urlPinningEnabled?: boolean;
   pinnedRules?: PinnedRule[];
@@ -509,6 +552,7 @@ function isValidMessage(message: unknown): message is ExtensionMessage {
       return msg.forceRefresh === undefined || typeof msg.forceRefresh === "boolean";
     case "set_config":
       return (msg.defaultProfile === undefined || msg.defaultProfile === null || typeof msg.defaultProfile === "string") &&
+        (msg.defaultProfileEmail === undefined || msg.defaultProfileEmail === null || typeof msg.defaultProfileEmail === "string") &&
         (msg.closeSourceTab === undefined || typeof msg.closeSourceTab === "boolean") &&
         (msg.urlPinningEnabled === undefined || typeof msg.urlPinningEnabled === "boolean") &&
         (msg.pinnedRules === undefined || Array.isArray(msg.pinnedRules)) &&
