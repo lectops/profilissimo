@@ -10,3 +10,7 @@ native-host/bin/
 native-host/profilissimo-nmh.sh
 *.zip
 *.docx
+
+# Bun incremental build cache
+*.bun-build
+.*.bun-build

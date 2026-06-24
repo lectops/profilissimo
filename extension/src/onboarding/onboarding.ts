@@ -1,5 +1,5 @@
 import { $ } from "../utils/dom.js";
-import { NMH_RELEASE_PAGE_URL } from "../utils/constants.js";
+import { INSTALL_COMMAND, NMH_RELEASE_PAGE_URL } from "../utils/constants.js";
 import {
   fetchInstallableProfiles,
   renderInstallList,
@@ -8,54 +8,50 @@ import {
   type RowEntry,
 } from "../utils/multi-profile-install.js";
 
-const hero = $("hero");
-const heroTitle = $("hero-title");
-const connectedPill = $("connected-pill");
-const setupSection = $("setup-section");
-const successDone = $("success-done");
-const successMulti = $("success-multi");
-const checkBtn = $("check-btn") as HTMLButtonElement;
-const statusEl = $("status");
-const statusDot = $("status-dot");
-const statusText = $("status-text");
-const doneBtn = $("done-btn") as HTMLButtonElement;
-const installList = $("profile-install-list") as HTMLUListElement;
-const installAllBtn = $("install-all-btn") as HTMLButtonElement;
-const installStatus = $("install-status");
-const skipLink = $("skip-link") as HTMLAnchorElement;
+// --- Element refs ---
+
+const setupSection      = $("setup-section");
+const connectedPill     = $("connected-pill");
+const checkBtn          = $("check-btn") as HTMLButtonElement;
+const statusEl          = $("status");
+const statusDot         = $("status-dot");
+const statusText        = $("status-text");
+const successDone       = $("success-done");
+const successMulti      = $("success-multi");
+const doneBtn           = $("done-btn") as HTMLButtonElement;
+const installList       = $("profile-install-list") as HTMLUListElement;
+const installAllBtn     = $("install-all-btn") as HTMLButtonElement;
+const installStatus     = $("install-status");
+const skipLink          = $("skip-link") as HTMLAnchorElement;
 const manualDownloadLink = $("manual-download-link") as HTMLAnchorElement;
+const copyBtn           = $("copy-btn") as HTMLButtonElement;
+const cmdText           = $("cmd-text");
+
+// --- Initialise static values ---
 
 manualDownloadLink.href = NMH_RELEASE_PAGE_URL;
+cmdText.textContent = INSTALL_COMMAND;
 
-let multiEntries: RowEntry[] = [];
+// --- Copy button ---
 
-// --- Copy buttons ---
-
-document.querySelectorAll(".copy-btn").forEach((btn) => {
-  btn.addEventListener("click", async () => {
-    const targetId = btn.getAttribute("data-target");
-    if (!targetId) return;
-    const codeEl = document.getElementById(targetId)?.querySelector("code");
-    if (!codeEl?.textContent) return;
-
-    try {
-      await navigator.clipboard.writeText(codeEl.textContent);
-      const original = btn.textContent;
-      btn.textContent = "Copied!";
-      setTimeout(() => {
-        btn.textContent = original;
-      }, 1500);
-    } catch {
-      // Clipboard permission denied — fail silently
-    }
-  });
+copyBtn.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(INSTALL_COMMAND);
+    const orig = copyBtn.textContent ?? "Copy";
+    copyBtn.textContent = "Copied";
+    setTimeout(() => {
+      copyBtn.textContent = orig;
+    }, 1600);
+  } catch {
+    // Clipboard permission denied — fail silently
+  }
 });
 
 // --- Connection check ---
 
 checkBtn.addEventListener("click", async () => {
   checkBtn.disabled = true;
-  checkBtn.textContent = "Checking...";
+  checkBtn.textContent = "Checking…";
   statusEl.classList.add("hidden");
 
   try {
@@ -63,24 +59,28 @@ checkBtn.addEventListener("click", async () => {
     statusEl.classList.remove("hidden");
 
     if (response?.connected) {
-      statusDot.className = "dot connected";
+      statusDot.className = "verify__dot connected";
       statusText.textContent = "Helper app connected.";
       setTimeout(() => {
         void revealSuccess();
       }, 800);
     } else {
-      statusDot.className = "dot disconnected";
+      statusDot.className = "verify__dot disconnected";
       statusText.textContent = "Not connected yet. Re-check the steps above.";
     }
   } catch {
     statusEl.classList.remove("hidden");
-    statusDot.className = "dot disconnected";
+    statusDot.className = "verify__dot disconnected";
     statusText.textContent = "Not connected yet. Re-check the steps above.";
   } finally {
     checkBtn.disabled = false;
     checkBtn.textContent = "Check connection";
   }
 });
+
+// --- Reveal success (Branch A or B) ---
+
+let multiEntries: RowEntry[] = [];
 
 async function revealSuccess(): Promise<void> {
   setupSection.classList.add("hidden");
@@ -89,16 +89,12 @@ async function revealSuccess(): Promise<void> {
   const installableCount = result?.installable.length ?? 0;
 
   if (installableCount === 0) {
-    // Branch A: pure celebration. Hero stays large.
+    // Branch A: no other profiles — pure celebration.
     successDone.classList.remove("hidden");
     return;
   }
 
-  // Branch B: one last step. Compact the hero, swap the celebratory copy
-  // for a "connected" pill, and lead with the multi-profile CTA.
-  hero.classList.remove("hero--large");
-  hero.classList.add("hero--compact");
-  heroTitle.innerHTML = 'Profil<em class="issimo">issimo</em>';
+  // Branch B: other profiles exist — show connected pill then step IV.
   connectedPill.classList.remove("hidden");
 
   multiEntries = renderInstallList({
@@ -109,24 +105,26 @@ async function revealSuccess(): Promise<void> {
 
   installAllBtn.textContent =
     installableCount === 1
-      ? "Open the Web Store in 1 other profile  →"
-      : `Open the Web Store in ${installableCount} other profiles  →`;
+      ? "Open the Web Store in 1 other profile →"
+      : `Open the Web Store in ${installableCount} other profiles →`;
 
   successMulti.classList.remove("hidden");
 }
 
-// --- Done / skip ---
+// --- Done (Branch A) ---
 
 doneBtn.addEventListener("click", () => {
   window.close();
 });
+
+// --- Skip (Branch B) ---
 
 skipLink.addEventListener("click", (e) => {
   e.preventDefault();
   window.close();
 });
 
-// --- Multi-profile install action ---
+// --- Install all (Branch B) ---
 
 installAllBtn.addEventListener("click", async () => {
   if (multiEntries.length === 0) return;

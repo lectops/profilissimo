@@ -9,102 +9,117 @@
 <body>
   <div class="page">
 
-    <header id="hero" class="hero hero--large">
-      <div class="hero__crest">
-        <span class="seal seal--halo hero__seal" aria-hidden="true">p</span>
+    <!-- Hero -->
+    <header class="hero">
+      <div class="hero__seal-wrap">
+        <span class="hero__seal" aria-hidden="true">p</span>
+        <span class="hero__halo" aria-hidden="true"></span>
       </div>
-      <div class="eyebrow eyebrow--brass hero__eyebrow">est. 2026</div>
-      <h1 id="hero-title" class="hero__title">
-        Profil<em class="issimo">issimo</em>
-      </h1>
-      <p id="hero-subtitle" class="hero__quote">
-        One click, and your tab opens in the right profile.
-      </p>
-      <span id="connected-pill" class="pill pill--success hero__pill hidden">
-        <span class="dot"></span> Helper app connected
-      </span>
+      <div class="hero__eyebrow">est. 2026</div>
+      <h1 class="hero__title">Profil<em>issimo</em></h1>
+      <p class="hero__tagline">One click, and your tab opens in the right profile.</p>
+      <div id="connected-pill" class="hero__connected hidden">
+        <span class="hero__connected-dot"></span>
+        Helper app connected
+      </div>
     </header>
 
-    <div class="card">
-      <div id="setup-section">
-        <div class="step">
-          <span class="step__no" aria-hidden="true">I</span>
-          <div class="step__content">
-            <h2 class="step__title">Install the helper app</h2>
-            <p class="step__desc">A small local binary so Profilissimo can talk to Chrome. Open Terminal and run:</p>
+    <div class="rule-divider"></div>
 
-            <div class="cmd">
-              <code class="cmd__text mono" id="cmd-macos">curl -fsSL https://raw.githubusercontent.com/lectops/profilissimo/main/installer/install.sh | bash</code>
-              <button class="cmd__copy" data-target="cmd-macos" title="Copy to clipboard">Copy</button>
+    <!-- Steps (hidden once verified) -->
+    <div id="setup-section">
+
+      <!-- Step I -->
+      <div class="step">
+        <span class="step__no" aria-hidden="true">I</span>
+        <div class="step__body">
+          <h2 class="step__title">Install the helper app</h2>
+          <p class="step__desc">A tiny local program that lets Profilissimo open your other Chrome profiles. Open <strong>Terminal</strong> and paste this one line:</p>
+
+          <div class="terminal">
+            <div class="terminal__bar">
+              <span class="terminal__dot terminal__dot--red"></span>
+              <span class="terminal__dot terminal__dot--yellow"></span>
+              <span class="terminal__dot terminal__dot--green"></span>
+              <span class="terminal__label">Terminal</span>
             </div>
-
-            <p class="step__hint">One install serves every Chrome profile on this Mac. <a id="manual-download-link" href="#" target="_blank" rel="noopener noreferrer">Or download manually &rarr;</a></p>
+            <div class="terminal__body">
+              <span class="terminal__prompt">$</span>
+              <code class="terminal__cmd" id="cmd-text"></code>
+              <button class="terminal__copy" id="copy-btn" type="button" aria-label="Copy install command">Copy</button>
+            </div>
           </div>
-        </div>
 
-        <div class="step">
-          <span class="step__no" aria-hidden="true">II</span>
-          <div class="step__content">
-            <h2 class="step__title">Restart Chrome</h2>
-            <p class="step__desc">Quit and reopen Chrome (<kbd>⌘Q</kbd>) — Chrome only picks up the helper app at startup.</p>
-          </div>
-        </div>
-
-        <div class="step">
-          <span class="step__no" aria-hidden="true">III</span>
-          <div class="step__content">
-            <h2 class="step__title">Verify connection</h2>
-            <p class="step__desc">A quick check that everything&rsquo;s wired up.</p>
-            <div class="verify">
-              <button id="check-btn" class="btn btn--primary">Check connection</button>
-              <div id="status" class="verify__status hidden">
-                <span id="status-dot" class="dot"></span>
-                <span id="status-text"></span>
-              </div>
+          <div class="safe-callout">
+            <svg class="safe-callout__icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="var(--success)" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
+            <div class="safe-callout__text">
+              <strong>Safe to run.</strong> It installs one small helper into your home folder and nothing else — no admin password, no system changes.
+              <a id="manual-download-link" href="#" target="_blank" rel="noopener noreferrer" class="safe-callout__link">Prefer to download it yourself? →</a>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Branch A: zero or one Chrome profile total. Pure celebration. -->
-      <div id="success-done" class="hidden success">
-        <div class="success__seal" aria-hidden="true">
-          <span class="seal seal--halo">p</span>
+      <!-- Step II -->
+      <div class="step">
+        <span class="step__no" aria-hidden="true">II</span>
+        <div class="step__body">
+          <h2 class="step__title">Restart Chrome</h2>
+          <p class="step__desc">Quit and reopen Chrome <kbd class="kbd">⌘Q</kbd> — it only notices the helper at startup.</p>
         </div>
-        <div class="eyebrow eyebrow--brass">All set</div>
-        <h2 class="success__title">You&rsquo;re ready.</h2>
-        <p class="success__desc">Profilissimo is connected. Open the popup or use the keyboard shortcut anytime.</p>
-        <div class="callout callout--brass">
-          <strong class="callout__lead">P.S.</strong>
-          Right-click any page and pick <em>&ldquo;Always open this site in&hellip;&rdquo;</em> to pin a hostname to a profile.
-        </div>
-        <button id="done-btn" class="btn btn--primary success__cta">Get started &rarr;</button>
       </div>
 
-      <!-- Branch B: one or more other profiles. Step IV framing. -->
-      <div id="success-multi" class="hidden multi">
-        <div class="eyebrow eyebrow--brass">Step IV — and last</div>
-        <h2 class="multi__title">
-          Install in your <em>other Chrome profiles</em>.
-        </h2>
-        <p class="multi__desc">
-          Chrome doesn&rsquo;t let an extension install itself across profiles. Profilissimo will open the Web Store in each — just click <em>Add to Chrome</em>.
-        </p>
-        <ul id="profile-install-list" class="install-list" role="list"></ul>
-        <button id="install-all-btn" class="btn btn--primary install-all-btn">Open the Web Store in other profiles &rarr;</button>
-        <p id="install-status" class="install-status hidden"></p>
-
-        <div class="callout callout--brass">
-          <strong class="callout__lead">P.S.</strong>
-          Right-click any page and pick <em>&ldquo;Always open this site in&hellip;&rdquo;</em> to pin a hostname to a profile.
+      <!-- Step III -->
+      <div class="step step--last">
+        <span class="step__no" aria-hidden="true">III</span>
+        <div class="step__body">
+          <h2 class="step__title">Verify the connection</h2>
+          <p class="step__desc">A quick check that everything's wired up.</p>
+          <div class="verify">
+            <button id="check-btn" class="btn" type="button">Check connection</button>
+            <div id="status" class="verify__status hidden" role="status" aria-live="polite">
+              <span id="status-dot" class="verify__dot"></span>
+              <span id="status-text" class="verify__text"></span>
+            </div>
+          </div>
         </div>
+      </div>
 
-        <div class="multi__footer">
-          <a href="#" id="skip-link" class="multi__skip">Skip — I&rsquo;ll do this later &rarr;</a>
-        </div>
+    </div>
+
+    <!-- Branch A: no other profiles — celebrate -->
+    <div id="success-done" class="branch-a hidden">
+      <div class="branch-a__seal-wrap" aria-hidden="true">
+        <span class="branch-a__seal">p</span>
+        <span class="branch-a__halo"></span>
+      </div>
+      <div class="branch-a__eyebrow">All set</div>
+      <h2 class="branch-a__title">You're ready.</h2>
+      <p class="branch-a__desc">Profilissimo is connected. Open the popup or hit the shortcut anytime.</p>
+      <div class="ps-callout">
+        <span class="ps-callout__lead">P.S.</span>
+        <div class="ps-callout__text">Right-click any page and choose <em>"Pin this site to…"</em> to make a site always open in one profile.</div>
+      </div>
+      <button id="done-btn" class="btn branch-a__cta" type="button">Get started →</button>
+    </div>
+
+    <!-- Branch B: other profiles exist — Step IV -->
+    <div id="success-multi" class="branch-b hidden">
+      <div class="branch-b__eyebrow">Step IV — and last</div>
+      <h2 class="branch-b__title">Add it to your <em>other Chrome profiles</em>.</h2>
+      <p class="branch-b__desc">Chrome runs each extension per profile, so it can't install itself across them. We'll open the Web Store in each — just click <em>Add to Chrome</em>.</p>
+      <ul id="profile-install-list" class="install-list" role="list"></ul>
+      <button id="install-all-btn" class="btn branch-b__install-btn" type="button">Open the Web Store in each →</button>
+      <p id="install-status" class="install-status hidden"></p>
+      <div class="branch-b__skip-row">
+        <a href="#" id="skip-link" class="branch-b__skip">Skip — I'll do this later →</a>
       </div>
     </div>
 
+    <!-- Footer ornament -->
     <footer class="page__footer">
       <span class="ornament" aria-hidden="true">
         <span class="ornament__rule"></span>
@@ -112,6 +127,7 @@
         <span class="ornament__rule"></span>
       </span>
     </footer>
+
   </div>
 
   <script type="module" src="onboarding.ts"></script>

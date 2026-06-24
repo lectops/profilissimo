@@ -7,181 +7,189 @@
   <link rel="stylesheet" href="options.css">
 </head>
 <body>
-  <div class="page">
-    <header class="page__header">
-      <div class="page__heading">
-        <h1 class="page__title">Settings</h1>
-      </div>
-      <div class="brandmark">
-        <span class="seal brandmark__seal" aria-hidden="true">p</span>
-        <span class="brandmark__text">
-          <span class="wordmark">Profil<span class="issimo">issimo</span></span>
-        </span>
-      </div>
-    </header>
+  <div class="settings-layout">
 
-    <section class="section">
-      <div class="section__heading">
-        <span class="section__no">§ I.</span>
-        <h2 class="section__title">Default profile</h2>
-        <span class="pill pill--brass">shared across profiles</span>
-      </div>
-      <p class="section__desc">For the keyboard shortcut <kbd id="shortcut-label">Alt+Shift+P</kbd> and one-click transfers.</p>
-      <div class="select-wrap">
-        <select id="default-profile">
-          <option value="">None — use last used</option>
-        </select>
-      </div>
-      <p class="section__desc section__desc--quiet"><a href="#" id="shortcut-link">Change shortcut in Chrome &rarr;</a></p>
-    </section>
+    <!-- Left TOC nav -->
+    <nav class="toc" aria-label="Contents">
+      <div class="toc__label">Contents</div>
+      <div class="toc__group-eyebrow">Preferences</div>
+      <a href="#sec-default" class="toc__item"><span class="toc__num">01</span>Default profile</a>
+      <a href="#sec-behavior" class="toc__item"><span class="toc__num">02</span>Behavior</a>
+      <a href="#sec-pins" class="toc__item"><span class="toc__num">03</span>Pinned sites</a>
+      <div class="toc__group-eyebrow">Setup &amp; maintenance</div>
+      <a href="#sec-helper" class="toc__item"><span class="toc__num">04</span>The helper app</a>
+      <a href="#sec-backup" class="toc__item"><span class="toc__num">05</span>Backup &amp; restore</a>
+      <a href="#other-profiles-section" class="toc__item"><span class="toc__num">06</span>Other profiles</a>
+    </nav>
 
-    <section class="section">
-      <div class="section__heading">
-        <span class="section__no">§ II.</span>
-        <h2 class="section__title">Behavior</h2>
-        <span class="pill pill--brass">shared across profiles</span>
+    <!-- Right content column -->
+    <div class="settings-content">
+      <div class="settings-content__header">
+        <h1 class="settings-content__title">Settings</h1>
+        <span class="seal" style="width:32px;height:32px;font-size:18px;" aria-hidden="true">p</span>
       </div>
-      <label class="toggle-row">
-        <span class="toggle">
-          <input type="checkbox" id="close-source-tab">
-          <span class="toggle__track" aria-hidden="true">
-            <span class="toggle__thumb"></span>
+      <div class="settings-content__rule"></div>
+
+      <!-- Preferences group eyebrow -->
+      <div class="section-group-eyebrow">Preferences</div>
+
+      <!-- §01 Default profile -->
+      <section id="sec-default" class="section">
+        <div class="section__heading">
+          <span class="section__num">01</span>
+          <h2 class="section__title">Default profile</h2>
+          <span class="pill pill--brass">synced</span>
+        </div>
+        <p class="section__desc">Where the keyboard shortcut <kbd id="shortcut-label" class="kbd">⌥⇧P</kbd> and one-click moves send a page.</p>
+        <div class="select-wrap">
+          <select id="default-profile">
+            <option value="">None — use last used</option>
+          </select>
+        </div>
+        <p class="section__desc section__desc--quiet"><a href="#" id="shortcut-link">Change shortcut in Chrome &rarr;</a></p>
+      </section>
+
+      <!-- §02 Behavior -->
+      <section id="sec-behavior" class="section">
+        <div class="section__heading">
+          <span class="section__num">02</span>
+          <h2 class="section__title">Behavior</h2>
+          <span class="pill pill--brass">synced</span>
+        </div>
+        <div class="toggle-row" id="close-source-toggle-row">
+          <span class="toggle-track" id="close-source-track" aria-hidden="true">
+            <span class="toggle-thumb"></span>
           </span>
-        </span>
-        <span class="toggle-row__label">Close the source tab once the page is delivered</span>
-      </label>
-    </section>
+          <span class="toggle-row__label">Close the source tab once the page is delivered</span>
+          <input type="checkbox" id="close-source-tab" class="toggle-input" aria-label="Close the source tab once the page is delivered">
+        </div>
+      </section>
 
-    <section class="section">
-      <div class="section__heading">
-        <span class="section__no">§ III.</span>
-        <h2 class="section__title">Bound residences</h2>
-        <span class="pill pill--brass">shared across profiles</span>
-      </div>
-      <p class="section__desc">Sites that always open in a particular profile, no matter where you open them.</p>
+      <!-- §03 Pinned sites -->
+      <section id="sec-pins" class="section">
+        <div class="section__heading">
+          <span class="section__num">03</span>
+          <h2 class="section__title">Pinned sites</h2>
+          <span class="pill pill--brass">synced</span>
+        </div>
+        <p class="section__desc">Sites that always open in one profile, wherever you click them.</p>
 
-      <div id="pinning-needs-update" class="callout callout--warn hidden">
-        Update the helper app to enable URL pinning. See <a href="#nmh-status">The helper app</a> below.
-      </div>
+        <div id="pinning-needs-update" class="warn-banner hidden">
+          <span class="warn-banner__dot" aria-hidden="true"></span>
+          <div class="warn-banner__text">Pinning needs a newer helper. <a href="#sec-helper">Update it below</a> to add or change pins.</div>
+        </div>
 
-      <div id="pinning-section-body">
-        <label class="toggle-row">
-          <span class="toggle">
-            <input type="checkbox" id="url-pinning-toggle">
-            <span class="toggle__track" aria-hidden="true">
-              <span class="toggle__thumb"></span>
+        <div id="pinning-section-body">
+          <div class="toggle-row" id="auto-redirect-toggle-row" style="margin-bottom:6px;">
+            <span class="toggle-track" id="auto-redirect-track" aria-hidden="true">
+              <span class="toggle-thumb"></span>
             </span>
-          </span>
-          <span class="toggle-row__label">Auto-redirect bound URLs</span>
-        </label>
-
-        <div id="pinning-disclosure" class="callout callout--info hidden">
-          Profilissimo will check the URLs you visit against your rules. Nothing leaves your machine.
-        </div>
-
-        <div id="pinning-body" class="pinning-body">
-          <div class="rules">
-            <table id="rules-table" class="rules__table hidden">
-              <thead>
-                <tr>
-                  <th scope="col">Hostname</th>
-                  <th scope="col">Residence</th>
-                  <th scope="col" class="rules__actions-col"><span class="visually-hidden">Actions</span></th>
-                </tr>
-              </thead>
-              <tbody id="rules-tbody"></tbody>
-            </table>
-
-            <p id="rules-empty" class="rules__empty">
-              <em>No bindings yet.</em> Add one below, or right-click any page and pick <em>&ldquo;Always open this site in&hellip;&rdquo;</em>.
-            </p>
+            <span class="toggle-row__label">Auto-redirect pinned sites</span>
+            <input type="checkbox" id="url-pinning-toggle" class="toggle-input" aria-label="Auto-redirect pinned sites">
           </div>
 
-          <form id="add-rule-form" class="add-rule" novalidate>
-            <input
-              type="text"
-              id="add-rule-pattern"
-              class="mono add-rule__pattern"
-              placeholder="hostname (e.g. notion.so)"
-              autocomplete="off"
-              spellcheck="false">
-            <select id="add-rule-profile" class="add-rule__profile">
-              <option value="">Choose profile&hellip;</option>
-            </select>
-            <button type="submit" id="add-rule-btn" class="btn btn--primary">Bind</button>
-          </form>
-          <p id="add-rule-error" class="add-rule__error hidden"></p>
-        </div>
-      </div>
-    </section>
-
-    <section id="nmh-status" class="section">
-      <div class="section__heading">
-        <span class="section__no">§ IV.</span>
-        <h2 class="section__title">The helper app</h2>
-        <span class="pill">this Mac only</span>
-      </div>
-      <div id="nmh-card" class="nmh-card">
-        <span id="nmh-indicator" class="nmh-card__indicator" aria-hidden="true"></span>
-        <div class="nmh-card__body">
-          <div class="nmh-card__title">
-            <span id="nmh-text">Checking&hellip;</span>
-            <em id="nmh-version" class="nmh-card__version"></em>
+          <div id="pinning-disclosure" class="pinning-disclosure hidden">
+            Profilissimo checks pages you open against your pins. Nothing leaves this Mac.
           </div>
-          <div class="nmh-card__path mono">~/.profilissimo/bin/profilissimo-nmh</div>
+
+          <div id="pinning-body" class="pinning-body">
+
+            <div id="pins-table-wrap" class="pins-table-wrap hidden">
+              <div class="pins-table__header">
+                <span class="pins-table__col-hostname">Hostname</span>
+                <span class="pins-table__col-profile">Profile</span>
+                <span class="pins-table__col-actions"></span>
+              </div>
+              <div id="pins-tbody"></div>
+            </div>
+
+            <div id="pins-empty" class="pins-empty hidden">
+              <em>No pinned sites yet.</em> Add one below, or right-click any page and choose <em>&ldquo;Pin this site to&hellip;&rdquo;</em>
+            </div>
+
+            <form id="add-rule-form" class="add-pin-form" novalidate>
+              <input
+                type="text"
+                id="add-rule-pattern"
+                class="add-pin-form__hostname"
+                placeholder="hostname (e.g. notion.so)"
+                autocomplete="off"
+                spellcheck="false">
+              <div class="select-wrap add-pin-form__profile-wrap">
+                <select id="add-rule-profile" class="add-pin-form__profile">
+                  <option value="">Choose profile&hellip;</option>
+                </select>
+              </div>
+              <button type="submit" id="add-rule-btn" class="btn btn--serif-primary add-pin-form__btn">Pin</button>
+            </form>
+            <p id="add-rule-error" class="add-pin-error hidden"></p>
+          </div>
         </div>
-        <div id="nmh-action" class="nmh-card__action"></div>
-      </div>
-    </section>
+      </section>
 
-    <section class="section">
-      <div class="section__heading">
-        <span class="section__no">§ V.</span>
-        <h2 class="section__title">Backup &amp; restore</h2>
-        <span class="pill pill--brass">shared across profiles</span>
-      </div>
-      <p class="section__desc">Save your settings to a file, or restore them on another Mac. Bindings are matched by account email, so they follow your accounts even when Chrome assigns them different profile slots.</p>
-      <div class="backup-actions">
-        <button type="button" id="export-btn" class="btn btn--primary">Export settings&hellip;</button>
-        <button type="button" id="import-btn" class="btn btn--ghost">Import settings&hellip;</button>
-        <input type="file" id="import-file" accept="application/json,.json" hidden>
-      </div>
-      <p id="backup-status" class="backup-status hidden"></p>
-    </section>
+      <!-- Setup & maintenance group eyebrow -->
+      <div class="section-group-divider"></div>
+      <div class="section-group-eyebrow">Setup &amp; maintenance</div>
 
-    <section id="other-profiles-section" class="section section--collapsible hidden">
-      <button type="button" id="other-profiles-toggle" class="section__heading section__heading--toggle" aria-expanded="true" aria-controls="other-profiles-body">
-        <span class="section__no">§ VI.</span>
-        <h2 class="section__title">Other residences</h2>
-        <span class="section__toggle-state">
-          <span class="section__toggle-state-text" id="other-profiles-toggle-label">Hide</span>
-          <span class="section__toggle-icon" aria-hidden="true">▾</span>
-        </span>
-      </button>
-      <div id="other-profiles-body" class="section__body">
-        <p class="section__desc">Profilissimo runs separately in each Chrome profile. Install it in your other profiles &mdash; just click <em>Add to Chrome</em>.</p>
-        <ul id="profile-install-list" class="install-list" role="list"></ul>
-        <button id="install-all-btn" class="btn btn--primary install-all-btn">Open the Web Store in other profiles &rarr;</button>
-        <p id="install-status" class="install-status hidden"></p>
-        <p class="other-profiles-dismiss">
-          <a href="#" id="other-profiles-dismiss-link">Already installed &mdash; hide this prompt &rarr;</a>
-        </p>
-      </div>
-    </section>
+      <!-- §04 The helper app -->
+      <section id="sec-helper" class="section">
+        <div class="section__heading">
+          <span class="section__num">04</span>
+          <h2 class="section__title">The helper app</h2>
+          <span class="pill pill--mac">this Mac only</span>
+        </div>
+        <div id="helper-status-mount"></div>
+      </section>
 
-    <footer class="page__footer">
-      <span class="ornament" aria-hidden="true">
-        <span class="ornament__rule"></span>
-        <span class="ornament__glyph">❦</span>
-        <span class="ornament__rule"></span>
-      </span>
-      <p class="page__signoff">The helper app is installed once and serves every Chrome profile on this Mac.</p>
-    </footer>
+      <!-- §05 Backup & restore -->
+      <section id="sec-backup" class="section">
+        <div class="section__heading">
+          <span class="section__num">05</span>
+          <h2 class="section__title">Backup &amp; restore</h2>
+          <span class="pill pill--brass">synced</span>
+        </div>
+        <p class="section__desc" style="max-width:560px;">Save your settings to a file, or restore on another Mac. Pins are matched by account email, so they follow your accounts even if Chrome shuffles profile slots.</p>
+        <div class="backup-actions">
+          <button type="button" id="export-btn" class="btn btn--serif-primary">Export settings&hellip;</button>
+          <button type="button" id="import-btn" class="btn btn--ghost">Import settings&hellip;</button>
+          <input type="file" id="import-file" accept="application/json,.json" hidden>
+        </div>
+        <p id="backup-status" class="backup-status hidden"></p>
+      </section>
 
-    <div id="save-status" class="save-status hidden" role="status">
-      Saved.
+      <!-- §06 Other profiles -->
+      <section id="other-profiles-section" class="section section--card hidden">
+        <button type="button" id="other-profiles-toggle" class="other-profiles-header" aria-expanded="true" aria-controls="other-profiles-body">
+          <span class="section__num">06</span>
+          <h2 class="section__title" style="flex:1;">Other Chrome profiles</h2>
+          <span id="other-profiles-toggle-label" class="other-profiles-header__state-text"></span>
+          <span class="other-profiles-header__caret" id="other-profiles-caret" aria-hidden="true">▾</span>
+        </button>
+        <div id="other-profiles-body" class="other-profiles-body">
+          <p class="section__desc">Chrome runs each extension per profile, so Profilissimo must be added to each one separately. We'll open the Web Store in each — just click <em>Add to Chrome</em>.</p>
+          <ul id="profile-install-list" class="install-list" role="list"></ul>
+          <button id="install-all-btn" class="btn btn--serif-primary">Open the Web Store in each &rarr;</button>
+          <p id="install-status" class="install-status hidden"></p>
+          <div class="other-profiles-dismiss">
+            <a href="#" id="other-profiles-dismiss-link">Already installed everywhere — hide this &rarr;</a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Footer -->
+      <footer class="settings-footer">
+        <div class="settings-footer__ornament">
+          <span class="settings-footer__rule"></span>
+          <span class="settings-footer__glyph" aria-hidden="true">❦</span>
+          <span class="settings-footer__rule"></span>
+        </div>
+        <p class="settings-footer__signoff">One helper, installed once, serves every Chrome profile on this Mac.</p>
+      </footer>
     </div>
   </div>
+
+  <!-- "Saved." pill toast -->
+  <div id="save-status" class="save-toast hidden" role="status">Saved.</div>
 
   <script type="module" src="options.ts"></script>
 </body>
