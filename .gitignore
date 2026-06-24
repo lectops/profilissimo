@@ -14,3 +14,6 @@ native-host/profilissimo-nmh.sh
 # Bun incremental build cache
 *.bun-build
 .*.bun-build
+
+# SDD scratch (ledger, reports, review packages)
+.superpowers/
