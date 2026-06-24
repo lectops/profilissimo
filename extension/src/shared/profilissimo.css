@@ -13,23 +13,44 @@
 
 :root {
   /* Surface */
+  --bg:           #D9D1BF;
+  --vellum:       #FBF7EF;
   --paper:        #F4EFE6;
   --paper-2:      #EBE4D6;
   --paper-3:      #E1D9C7;
-  --vellum:       #FBF7EF;
+  --chrome:       #E8E0D0;
+  --row-hover:    #F1EADB;
+
+  /* Ink */
   --ink:          #14130F;
   --ink-2:        #2B2922;
   --ink-3:        #585348;
   --ink-4:        #8A8472;
   --ink-5:        #B5AE9B;
+  --on-ink:       #FBF7EF;
+
+  /* Semantic surface tokens */
+  --btn-bg:       #14130F;
+  --btn-text:     #FBF7EF;
+  --seal-bg:      #14130F;
+  --seal-text:    #FBF7EF;
+
+  /* Rules */
   --rule:         rgba(20, 19, 15, 0.14);
   --rule-strong:  rgba(20, 19, 15, 0.28);
+  --rule-2:       rgba(20, 19, 15, 0.28);
+  --rule-soft:    rgba(20, 19, 15, 0.08);
+  --rule-10:      rgba(20, 19, 15, 0.10);
+  --rule-12:      rgba(20, 19, 15, 0.12);
+  --rule-20:      rgba(20, 19, 15, 0.20);
+  --rule-25:      rgba(20, 19, 15, 0.25);
 
   /* Brass — warm metallic accent */
   --brass:        #8C6A2A;
   --brass-2:      #B08A45;
   --brass-3:      #D9B870;
   --brass-tint:   #F1E5C9;
+  --brass-text:   #7A5512;
 
   /* Neon halo (the icon's twin halos — one moment per surface, max) */
   --cyan:         #00F0FF;
@@ -41,7 +62,9 @@
   --danger:       #8A2A2A;
   --danger-tint:  #ECDADA;
   --warn:         #8A6116;
+  --warn-strong:  #8A6116;
   --warn-tint:    #F2E6C5;
+  --warn-text:    #7A5512;
 
   /* Type */
   --serif: "Fraunces Variable", "Fraunces", "Tiempos Headline", "Cormorant Garamond", Georgia, "Times New Roman", serif;
@@ -53,6 +76,54 @@
   --r-md: 8px;
   --r-lg: 14px;
   --r-xl: 22px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg:           #100F0C;
+    --vellum:       #1C1A16;
+    --paper:        #211E18;
+    --paper-2:      #2A2620;
+    --paper-3:      #332F26;
+    --chrome:       #171511;
+    --row-hover:    #2A271F;
+
+    --ink:          #F1EADB;
+    --ink-2:        #DBD4C4;
+    --ink-3:        #B0A994;
+    --ink-4:        #8A8472;
+    --ink-5:        #6E6757;
+    --on-ink:       #FBF7EF;
+
+    --btn-bg:       #F1EADB;
+    --btn-text:     #1C1A16;
+    --seal-bg:      #F1EADB;
+    --seal-text:    #14130F;
+
+    --rule:         rgba(241, 234, 219, 0.14);
+    --rule-strong:  rgba(241, 234, 219, 0.26);
+    --rule-2:       rgba(241, 234, 219, 0.26);
+    --rule-soft:    rgba(241, 234, 219, 0.07);
+    --rule-10:      rgba(241, 234, 219, 0.10);
+    --rule-12:      rgba(241, 234, 219, 0.12);
+    --rule-20:      rgba(241, 234, 219, 0.18);
+    --rule-25:      rgba(241, 234, 219, 0.22);
+
+    --brass:        #C49A4E;
+    --brass-2:      #D9B870;
+    --brass-3:      #E6CE8E;
+    --brass-tint:   #3A3220;
+    --brass-text:   #E6CE8E;
+
+    --success:      #7FB98C;
+    --success-tint: #22352A;
+    --danger:       #D98C8C;
+    --danger-tint:  #3A2424;
+    --warn:         #D9B870;
+    --warn-strong:  #D9B870;
+    --warn-tint:    #3A3220;
+    --warn-text:    #E6CE8E;
+  }
 }
 
 * { box-sizing: border-box; }
