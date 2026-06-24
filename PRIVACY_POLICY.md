@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last updated:** April 30, 2026
+**Last updated:** June 24, 2026
 
 Profilissimo is a Chrome extension that lets you open tabs and links in different Chrome profiles. This policy explains what data the extension accesses, stores, and does not collect.
 
@@ -12,7 +12,7 @@ Profilissimo is a Chrome extension that lets you open tabs and links in differen
 
 - **Current tab URL** — When you transfer a tab, Profilissimo reads the URL of the active tab to open it in the target profile. The URL is passed to the local helper app and is never sent to any external server.
 
-- **Top-frame navigation URLs (URL pinning, off by default)** — If you enable the optional "Auto-redirect pinned URLs" feature in Settings, Profilissimo observes the hostname of top-frame navigations to check whether it matches one of your pinned rules. Matching is performed locally in the extension's service worker against your locally-stored rules; URLs are never logged or transmitted. The feature is off by default and can be disabled at any time. Pinned-rule matching does not run when the feature is off.
+- **Top-frame navigation URLs (site pinning, off by default)** — If you enable the optional "Auto-redirect pinned sites" feature in Settings, Profilissimo observes the hostname of top-frame navigations to check whether it matches one of your pinned rules. Matching is performed locally in the extension's service worker against your locally-stored rules; URLs are never logged or transmitted. The feature is off by default and can be disabled at any time. Pinned-rule matching does not run when the feature is off.
 
 ## What data is stored
 
@@ -25,7 +25,7 @@ Profilissimo is a Chrome extension that lets you open tabs and links in differen
 - No analytics or telemetry
 - No personal information transmitted to external servers
 - No cookies read or written
-- No browsing history accessed
+- No browsing history is collected, stored, or transmitted
 - No third-party services or APIs called
 - No data shared with any third party
 
