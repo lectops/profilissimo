@@ -46,7 +46,7 @@
             <div class="terminal__body">
               <span class="terminal__prompt">$</span>
               <code class="terminal__cmd" id="cmd-text"></code>
-              <button class="terminal__copy" id="copy-btn" type="button">Copy</button>
+              <button class="terminal__copy" id="copy-btn" type="button" aria-label="Copy install command">Copy</button>
             </div>
           </div>
 
@@ -80,7 +80,7 @@
           <p class="step__desc">A quick check that everything's wired up.</p>
           <div class="verify">
             <button id="check-btn" class="btn" type="button">Check connection</button>
-            <div id="status" class="verify__status hidden">
+            <div id="status" class="verify__status hidden" role="status" aria-live="polite">
               <span id="status-dot" class="verify__dot"></span>
               <span id="status-text" class="verify__text"></span>
             </div>
