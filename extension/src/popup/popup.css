@@ -353,6 +353,12 @@ body {
   background-position: center;
 }
 
+/* Real favicon image: neutral surface-tone tile (no stark seal inversion),
+   so transparent icons read naturally in both light and dark. */
+.popup__favicon--image {
+  background-color: var(--paper-2);
+}
+
 .popup__page-url {
   flex: 1;
   min-width: 0;

@@ -131,10 +131,16 @@ function setCurrentPageCard(url: string | undefined, faviconUrl: string | undefi
   currentFavicon.textContent = "";
 
   if (faviconUrl) {
+    // Real site favicon: sit it on a neutral tile. Many favicons are
+    // transparent PNGs, so the seal-coloured base would show through and
+    // island the icon on an inverted (black-in-light / cream-in-dark) square.
     currentFavicon.style.backgroundImage = `url(${JSON.stringify(faviconUrl)})`;
+    currentFavicon.classList.add("popup__favicon--image");
   } else {
+    // Letter fallback keeps the seal-chip styling (a mini brandmark).
     const first = display.replace(/^https?:\/\//, "").charAt(0).toUpperCase();
     currentFavicon.textContent = first || "·";
+    currentFavicon.classList.remove("popup__favicon--image");
   }
   currentPageCard.classList.remove("hidden");
 }
