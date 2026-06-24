@@ -122,6 +122,13 @@ body {
 
 .profile-row--current {
   cursor: default;
+}
+
+/* Dim only the non-interactive content of the current row; the new-window
+   button must stay fully legible since it's the row's one actionable control. */
+.profile-row--current .profile-row__chip,
+.profile-row--current .profile-row__body,
+.profile-row--current .profile-row__current-tag {
   opacity: 0.55;
 }
 
@@ -172,6 +179,33 @@ body {
   color: var(--ink-4);
   flex-shrink: 0;
 }
+
+.profile-row__new-window {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-4);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.profile-row__new-window:hover {
+  background: var(--paper-3);
+  color: var(--ink);
+}
+
+.profile-row__new-window:focus-visible {
+  outline: 2px solid var(--brass-2);
+  outline-offset: -2px;
+}
+
 
 /* ---------- Pin section ---------- */
 .popup__pin {

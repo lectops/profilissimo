@@ -71,7 +71,51 @@ function setCurrentPageCard(url: string | undefined, faviconUrl: string | undefi
   currentPageCard.classList.remove("hidden");
 }
 
-function renderProfiles(profiles: ProfileInfo[], currentEmail?: string | null): void {
+function createNewWindowButton(profile: ProfileInfo): HTMLButtonElement {
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.className = "profile-row__new-window";
+  btn.setAttribute("aria-label", `Open new window in ${profile.name}`);
+  btn.title = `New window in ${profile.name}`;
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", "15");
+  svg.setAttribute("height", "15");
+  svg.setAttribute("viewBox", "0 0 16 16");
+  svg.setAttribute("fill", "none");
+  svg.setAttribute("aria-hidden", "true");
+
+  const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  rect.setAttribute("x", "2.5");
+  rect.setAttribute("y", "2.5");
+  rect.setAttribute("width", "11");
+  rect.setAttribute("height", "11");
+  rect.setAttribute("rx", "2.5");
+  rect.setAttribute("stroke", "currentColor");
+  rect.setAttribute("stroke-width", "1.25");
+
+  const plus = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  plus.setAttribute("d", "M8 5.5v5M5.5 8h5");
+  plus.setAttribute("stroke", "currentColor");
+  plus.setAttribute("stroke-width", "1.25");
+  plus.setAttribute("stroke-linecap", "round");
+
+  svg.appendChild(rect);
+  svg.appendChild(plus);
+  btn.appendChild(svg);
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    void openNewWindowInProfile(profile);
+  });
+  btn.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") e.stopPropagation();
+  });
+
+  return btn;
+}
+
+function renderProfiles(profiles: ProfileInfo[], currentEmail: string | null | undefined, nmhUpToDate: boolean): void {
   profileList.replaceChildren();
 
   profiles.forEach((profile, index) => {
@@ -135,6 +179,10 @@ function renderProfiles(profiles: ProfileInfo[], currentEmail?: string | null): 
       path.setAttribute("stroke-linejoin", "round");
       caret.appendChild(path);
       li.appendChild(caret);
+    }
+
+    if (nmhUpToDate) {
+      li.appendChild(createNewWindowButton(profile));
     }
 
     profileList.appendChild(li);
@@ -203,6 +251,32 @@ async function transferToProfile(profile: ProfileInfo, targetIndex: number): Pro
   }
 }
 
+async function openNewWindowInProfile(profile: ProfileInfo): Promise<void> {
+  if (transferring) return;
+  transferring = true;
+
+  try {
+    // No `url` and no `sourceTabId`: the service worker routes this to the NMH
+    // open_profile action, which opens a fresh window in the target profile.
+    // We are not moving or closing any tab.
+    const response = await chrome.runtime.sendMessage({
+      type: "transfer",
+      targetProfile: profile.directory,
+    });
+
+    if (response?.success) {
+      showStatus(`Opening new window in ${profile.name}`, "success");
+      setTimeout(() => window.close(), 700);
+    } else {
+      showStatus(response?.error ?? "Couldn't open a new window", "error");
+    }
+  } catch {
+    showStatus("Couldn't open a new window", "error");
+  } finally {
+    transferring = false;
+  }
+}
+
 async function loadProfiles(forceRefresh = false): Promise<void> {
   loading.classList.remove("hidden");
   profileList.replaceChildren();
@@ -239,7 +313,7 @@ async function loadProfiles(forceRefresh = false): Promise<void> {
       }
       cachedProfiles = response.profiles;
       cachedCurrentEmail = currentEmail;
-      renderProfiles(response.profiles, currentEmail);
+      renderProfiles(response.profiles, currentEmail, nmhUpToDate);
       profileSection.classList.remove("hidden");
 
       // Current page card

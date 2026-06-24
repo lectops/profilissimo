@@ -21,6 +21,7 @@ This is for the new optional URL pinning feature (see below) and is **off by def
 If you want the new chrome:// transfer or URL pinning features, you also need to update the helper app. Settings will show a yellow "Connected — update available" status with a one-click copy-update-command button (or download the binary manually from the GitHub release page).
 
 ### Added
+- Each profile in the toolbar popup now has a "new window" button that opens a fresh empty window in that profile, regardless of which profile you're currently in (no tab is moved). Requires the updated helper app; the button is hidden if the helper app is older than this extension expects.
 - Onboarding now leads with a prominent "One last step — add Profilissimo to your other profiles" view after the helper app is verified, with a single button that opens the Web Store in every other Chrome profile so the user can add the extension to each one without context-switching.
 - Settings page has a new "Other profiles" section providing the same one-click install flow for users who skipped it during onboarding.
 - Profilissimo now works on Chrome internal pages: triggering a transfer from `chrome://downloads`, `chrome://settings`, `chrome://bookmarks`, etc. opens the same page in the target profile (so you see *that* profile's downloads/settings/bookmarks).
