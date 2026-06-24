@@ -58,10 +58,10 @@ export async function launchInProfile(
 
   // When a URL is provided, we use `--` as an argv terminator so a URL that
   // *somehow* slipped past validation can't be reinterpreted as a Chrome flag.
-  // When there's no URL, we just open the profile fresh.
+  // When there's no URL, we just open the profile fresh with a new window.
   const args = url
     ? [`--profile-directory=${profileDirectory}`, "--", url]
-    : [`--profile-directory=${profileDirectory}`];
+    : [`--profile-directory=${profileDirectory}`, "--new-window"];
 
   return new Promise((resolve, reject) => {
     let settled = false;
