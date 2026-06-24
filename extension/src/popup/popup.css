@@ -173,6 +173,38 @@ body {
   flex-shrink: 0;
 }
 
+.profile-row__new-window {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-4);
+  cursor: pointer;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.profile-row__new-window:hover {
+  background: var(--paper-3);
+  color: var(--ink);
+}
+
+.profile-row__new-window:focus-visible {
+  outline: 2px solid var(--brass-2);
+  outline-offset: -2px;
+}
+
+/* The current-profile row is dimmed (opacity 0.55); keep its new-window button
+   legible enough to read as actionable. */
+.profile-row--current .profile-row__new-window {
+  color: var(--ink-3);
+}
+
 /* ---------- Pin section ---------- */
 .popup__pin {
   padding: 14px 18px 8px;
