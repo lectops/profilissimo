@@ -9,6 +9,10 @@ Update this file in the same PR as the change, not at release time.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [1.1.0] - 2026-06-24
+
 ### Heads-up for existing users on auto-update
 
 After Chrome auto-updates Profilissimo to this version, you'll see a prompt:
@@ -21,18 +25,20 @@ This is for the new optional URL pinning feature (see below) and is **off by def
 If you want the new chrome:// transfer or URL pinning features, you also need to update the helper app. Settings will show a yellow "Connected — update available" status with a one-click copy-update-command button (or download the binary manually from the GitHub release page).
 
 ### Added
+- A full visual refresh of the toolbar popup, Settings, and onboarding: clearer layout, a calmer one-step setup, a reusable helper-app status, and **automatic dark mode** that follows your system appearance.
 - Each profile in the toolbar popup now has a "new window" button that opens a fresh empty window in that profile, regardless of which profile you're currently in (no tab is moved). Requires the updated helper app; the button is hidden if the helper app is older than this extension expects.
 - Onboarding now leads with a prominent "One last step — add Profilissimo to your other profiles" view after the helper app is verified, with a single button that opens the Web Store in every other Chrome profile so the user can add the extension to each one without context-switching.
 - Settings page has a new "Other profiles" section providing the same one-click install flow for users who skipped it during onboarding.
 - Profilissimo now works on Chrome internal pages: triggering a transfer from `chrome://downloads`, `chrome://settings`, `chrome://bookmarks`, etc. opens the same page in the target profile (so you see *that* profile's downloads/settings/bookmarks).
 - Triggering Profilissimo from a tab with no usable URL (e.g. `about:blank`, a still-loading tab, or a `javascript:` URL) now opens a fresh window in the target profile instead of failing silently.
 - Settings page surfaces a "Connected — update available" status when the helper app is older than this extension expects, with a one-click copy of the update command **and a "Download manually" link** to the versioned GitHub release page for users who'd rather grab the binary directly.
-- Settings has a new "Backup & restore" section: **export** all your settings (default profile, behavior toggles, and bindings) to a JSON file, and **import** them on another Mac. On import, bindings are re-pointed to wherever each account currently lives on that machine, so they work immediately even if Chrome assigned the accounts different profile slots. Everything stays local — the export is a file you save yourself, nothing is transmitted. Invalid bindings in an imported file are skipped rather than failing the whole import.
+- Settings has a new "Backup & restore" section: **export** all your settings (default profile, behavior toggles, and pins) to a JSON file, and **import** them on another Mac. On import, pins are re-pointed to wherever each account currently lives on that machine, so they work immediately even if Chrome assigned the accounts different profile slots. Everything stays local — the export is a file you save yourself, nothing is transmitted. Invalid pins in an imported file are skipped rather than failing the whole import.
 - Pinned rules and the default (keyboard-shortcut) profile now remember the target by **account email**, not just the Chrome profile directory. The directory a given account lives in can change between machines (e.g. after a Migration Assistant transfer) or when profiles are added/removed; targeting by email means a rule re-resolves to wherever that account currently lives, instead of silently firing into the wrong profile. The directory is still stored as a fallback for accounts that are signed out or removed. Existing rules without an email keep working and gain one the next time they're edited.
-- URL pinning (off by default): designate that a specific hostname always opens in a chosen profile. Right-click any page → "Always open this site in…", use the toolbar popup's profile picker, or manage rules from the new "Pinned URLs" section in Settings. Matches the full hostname only (`mail.google.com` ≠ `docs.google.com`). When you navigate to a pinned site in the wrong profile, Profilissimo opens it in the right one and closes the source tab. Pinning to a different profile from the popup or the right-click menu also transfers the current tab there immediately, so you don't have to follow up with a manual transfer. Requires the `webNavigation` permission, which the extension only uses while the toggle is on.
+- URL pinning (off by default): designate that a specific hostname always opens in a chosen profile. Right-click any page → "Pin this site to…", use the per-profile pin button in the toolbar popup, or manage rules from the "Pinned sites" section in Settings. Matches the full hostname only (`mail.google.com` ≠ `docs.google.com`). When you navigate to a pinned site in the wrong profile, Profilissimo opens it in the right one and closes the source tab. Pinning to a different profile from the popup or the right-click menu also transfers the current tab there immediately, so you don't have to follow up with a manual transfer. Requires the `webNavigation` permission, which the extension only uses while the toggle is on.
 - If a pinned redirect fails (e.g. the target profile was deleted in Chrome), Profilissimo now surfaces a system notification instead of silently leaving the source tab open. Settings also shows the rule's target as "(unavailable)" so it's easy to spot and remove.
 
 ### Changed
+- Unified terminology: the "always open this site in a profile" feature is now called **pinning** everywhere — toolbar popup, Settings, the right-click menu ("Pin this site to…"), and notifications. Previously the UI mixed "bound residences" and "Pinned URLs" for the same thing.
 - Onboarding hero shrinks (smaller logo, no celebration badge) when there are still profiles to install in, so the remaining step reads as the primary task instead of a footnote. The "You're all set!" celebration is preserved for users with only one Chrome profile.
 - Onboarding's success states now include a one-line callout introducing the URL pinning gesture.
 - Helper app version bumped to 1.1.0. **Existing users keep working unchanged**, but the new chrome:// transfer and URL pinning features require the updated helper. The Settings page now hides the URL pinning controls (and shows a "needs update" notice) until the helper is upgraded, so the toggle no longer silently fails to persist on older helpers.
@@ -53,5 +59,6 @@ Initial release on the Chrome Web Store.
 - First-run onboarding guide
 - macOS Apple Silicon NMH binary
 
-[Unreleased]: https://github.com/lectops/profilissimo/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/lectops/profilissimo/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/lectops/profilissimo/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/lectops/profilissimo/releases/tag/v1.0.0
