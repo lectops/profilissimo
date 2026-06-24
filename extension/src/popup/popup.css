@@ -122,6 +122,13 @@ body {
 
 .profile-row--current {
   cursor: default;
+}
+
+/* Dim only the non-interactive content of the current row; the new-window
+   button must stay fully legible since it's the row's one actionable control. */
+.profile-row--current .profile-row__chip,
+.profile-row--current .profile-row__body,
+.profile-row--current .profile-row__current-tag {
   opacity: 0.55;
 }
 
@@ -199,11 +206,6 @@ body {
   outline-offset: -2px;
 }
 
-/* The current-profile row is dimmed (opacity 0.55); keep its new-window button
-   legible enough to read as actionable. */
-.profile-row--current .profile-row__new-window {
-  color: var(--ink-3);
-}
 
 /* ---------- Pin section ---------- */
 .popup__pin {
