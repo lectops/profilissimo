@@ -215,7 +215,7 @@ body {
   position: absolute;
   inset: -4px;
   border-radius: 999px;
-  box-shadow: -2px -1px 0 0 #00F0FF, 2px 1px 0 0 #FF2BD6;
+  box-shadow: -2px -1px 0 0 var(--cyan), 2px 1px 0 0 var(--magenta);
   animation: pf-halo 1.6s ease-in-out infinite;
   pointer-events: none;
 }
@@ -519,6 +519,10 @@ body {
   opacity: 0.5;
   transition: background 120ms ease, opacity 120ms ease, color 120ms ease;
   padding: 0;
+}
+
+.profile-row:hover .profile-row__icon:not(:disabled) {
+  opacity: 1;
 }
 
 .profile-row__icon:hover:not(:disabled) {

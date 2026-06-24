@@ -57,10 +57,6 @@ function showToast(message: string, type: "success" | "error"): void {
   if (toastTimeout) clearTimeout(toastTimeout);
   toastEl.textContent = message;
   toastEl.className = `popup__toast popup__toast--${type}`;
-  toastToastTimeout();
-}
-
-function toastToastTimeout(): void {
   toastTimeout = setTimeout(() => {
     toastEl.className = "popup__toast hidden";
     toastEl.textContent = "";
@@ -187,7 +183,7 @@ function renderProfiles(
   noTargets.classList.add("hidden");
   iconLegend.classList.remove("hidden");
 
-  targets.forEach((profile, idx) => {
+  targets.forEach((profile) => {
     // The profile's index within the full list (for colour consistency)
     const fullIdx = profiles.indexOf(profile);
 
@@ -200,6 +196,7 @@ function renderProfiles(
     moveDiv.setAttribute("role", "button");
     moveDiv.tabIndex = 0;
     moveDiv.title = `Move this tab to ${profile.name}`;
+    moveDiv.setAttribute("aria-label", `Move this tab to ${profile.name}`);
 
     const chip = document.createElement("span");
     chip.className = "chip profile-row__chip";
@@ -257,7 +254,6 @@ function renderProfiles(
 
     newWinBtn.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (!nmhUpToDate) return;
       void openNewWindowInProfile(profile);
     });
     newWinBtn.addEventListener("keydown", (e) => {
@@ -298,7 +294,6 @@ function renderProfiles(
     li.appendChild(iconsDiv);
 
     profileList.appendChild(li);
-    void idx; // suppress unused warning
   });
 }
 
@@ -360,7 +355,11 @@ async function openNewWindowInProfile(profile: ProfileInfo): Promise<void> {
 }
 
 // Save pin from per-row pin button (target = some other profile)
-async function savePinWithToast(targetDir: string, targetName: string): Promise<void> {
+async function savePinWithToast(
+  targetDir: string,
+  targetName: string,
+  suppressAutoRedirectNote = false,
+): Promise<void> {
   if (!currentTabHostname) return;
   const targetEmail = cachedProfiles.find((p) => p.directory === targetDir)?.email;
   const filtered = cachedPinnedRules.filter((r) => r.pattern !== currentTabHostname);
@@ -385,7 +384,7 @@ async function savePinWithToast(targetDir: string, targetName: string): Promise<
 
     // Build toast copy per comp
     let msg = `Pinned ${currentTabHostname} → ${targetName}`;
-    if (!cachedUrlPinningEnabled) {
+    if (!suppressAutoRedirectNote && !cachedUrlPinningEnabled) {
       msg += " · auto-redirect is off";
     }
     showToast(msg, "success");
@@ -413,7 +412,7 @@ async function savePinToCurrent(): Promise<void> {
   if (!currentDir || !currentTabHostname) return;
   const currentProfile = cachedProfiles.find((p) => p.directory === currentDir);
   if (!currentProfile) return;
-  await savePinWithToast(currentDir, currentProfile.name);
+  await savePinWithToast(currentDir, currentProfile.name, true);
 }
 
 // ─── Load profiles ────────────────────────────────────────────────────────────
@@ -504,6 +503,7 @@ async function loadProfiles(forceRefresh = false): Promise<void> {
     if (canPinCurrent) {
       pinHereBtn.classList.remove("hidden");
       pinHereBtn.title = `Pin ${hostname} to this profile`;
+      pinHereBtn.setAttribute("aria-label", `Pin ${hostname} to this profile`);
     } else {
       pinHereBtn.classList.add("hidden");
     }
