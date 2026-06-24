@@ -343,6 +343,136 @@ html, body {
 
 .hidden { display: none !important; }
 
+/* ---------- HelperStatus ---------- */
+.helper-status {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}
+
+.helper-status--card {
+  padding: 15px 16px;
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+  background: var(--vellum);
+  gap: 12px;
+}
+
+.helper-status--compact {
+  gap: 10px;
+}
+
+.helper-status__left {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Status dot with coloured ring */
+.helper-status__dot {
+  flex-shrink: 0;
+  border-radius: 999px;
+}
+
+.helper-status--card .helper-status__dot {
+  width: 11px;
+  height: 11px;
+  box-shadow: 0 0 0 5px var(--hs-ring);
+}
+
+.helper-status--compact .helper-status__dot {
+  width: 9px;
+  height: 9px;
+  box-shadow: 0 0 0 4px var(--hs-ring);
+}
+
+.helper-status__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.helper-status__title {
+  font-family: var(--serif);
+  font-style: italic;
+  font-weight: 400;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.helper-status--card .helper-status__title {
+  font-size: 16px;
+}
+
+.helper-status--compact .helper-status__title {
+  font-size: 14px;
+}
+
+.helper-status__sub {
+  font-family: var(--mono);
+  color: var(--ink-3);
+  line-height: 1.3;
+}
+
+.helper-status--card .helper-status__sub {
+  font-size: 11px;
+}
+
+.helper-status--compact .helper-status__sub {
+  font-size: 10.5px;
+}
+
+.helper-status__path {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-5);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Action button */
+.helper-status__action {
+  flex-shrink: 0;
+  padding: 7px 13px;
+  border-radius: var(--r-md);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background 120ms ease, border-color 120ms ease;
+  white-space: nowrap;
+}
+
+.helper-status__action--warn {
+  background: var(--warn-tint);
+  color: var(--warn-text);
+  border-color: var(--warn-tint);
+}
+
+.helper-status__action--warn:hover {
+  background: var(--warn-strong);
+  color: var(--vellum);
+  border-color: var(--warn-strong);
+}
+
+.helper-status__action--ink {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border-color: var(--btn-bg);
+}
+
+.helper-status__action--ink:hover {
+  opacity: 0.85;
+}
+
 /* ---------- Focus ---------- */
 :focus-visible {
   outline: 2px solid var(--brass-2);
