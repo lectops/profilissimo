@@ -1,6 +1,6 @@
 import { $ } from "../utils/dom.js";
 import { applyChip } from "../utils/format.js";
-import { INSTALL_COMMAND, UNINSTALL_COMMAND, REQUIRED_NMH_VERSION, NMH_RELEASE_PAGE_URL } from "../utils/constants.js";
+import { INSTALL_COMMAND, REQUIRED_NMH_VERSION, NMH_RELEASE_PAGE_URL } from "../utils/constants.js";
 import { isAtLeast } from "../utils/version.js";
 import { isValidPattern } from "../utils/pin-matcher.js";
 import { uuid } from "../utils/uuid.js";
@@ -12,56 +12,73 @@ import {
   summarizeCascade,
   type RowEntry,
 } from "../utils/multi-profile-install.js";
+import { renderHelperStatus, type HelperState } from "../shared/helper-status.js";
 
-const PINNING_DISCLOSURE_SEEN_KEY = "urlPinningDisclosureSeen";
+// ── DOM refs ──────────────────────────────────────────────────────────────────
 
-const defaultProfileSelect = $("default-profile") as HTMLSelectElement;
-const closeSourceTab = $("close-source-tab") as HTMLInputElement;
-const shortcutLabel = $("shortcut-label") as HTMLElement;
-const shortcutLink = $("shortcut-link") as HTMLAnchorElement;
-const nmhIndicator = $("nmh-indicator") as HTMLSpanElement;
-const nmhText = $("nmh-text") as HTMLSpanElement;
-const nmhVersion = $("nmh-version") as HTMLDivElement;
-const nmhAction = $("nmh-action") as HTMLDivElement;
-const saveStatusEl = $("save-status") as HTMLDivElement;
-const otherProfilesSection = $("other-profiles-section");
-const otherProfilesToggle = $("other-profiles-toggle") as HTMLButtonElement;
+const defaultProfileSelect    = $("default-profile") as HTMLSelectElement;
+const shortcutLabel           = $("shortcut-label") as HTMLElement;
+const shortcutLink            = $("shortcut-link") as HTMLAnchorElement;
+
+// Custom toggle: close-source-tab
+const closeSourceTrack        = $("close-source-track") as HTMLSpanElement;
+const closeSourceCheckbox     = $("close-source-tab") as HTMLInputElement;
+
+// Pinned sites
+const pinningNeedsUpdate      = $("pinning-needs-update") as HTMLDivElement;
+const pinningSectionBody      = $("pinning-section-body") as HTMLDivElement;
+const autoRedirectTrack       = $("auto-redirect-track") as HTMLSpanElement;
+const autoRedirectCheckbox    = $("url-pinning-toggle") as HTMLInputElement;
+const pinningDisclosure       = $("pinning-disclosure") as HTMLDivElement;
+const pinningBody             = $("pinning-body") as HTMLDivElement;
+const pinsTableWrap           = $("pins-table-wrap") as HTMLDivElement;
+const pinsTbody               = $("pins-tbody") as HTMLDivElement;
+const pinsEmpty               = $("pins-empty") as HTMLDivElement;
+const addRuleForm             = $("add-rule-form") as HTMLFormElement;
+const addRulePattern          = $("add-rule-pattern") as HTMLInputElement;
+const addRuleProfile          = $("add-rule-profile") as HTMLSelectElement;
+const addRuleBtn              = $("add-rule-btn") as HTMLButtonElement;
+const addRuleError            = $("add-rule-error") as HTMLParagraphElement;
+
+// Helper-status mount
+const helperStatusMount       = $("helper-status-mount") as HTMLDivElement;
+
+// Backup
+const exportBtn               = $("export-btn") as HTMLButtonElement;
+const importBtn               = $("import-btn") as HTMLButtonElement;
+const importFile              = $("import-file") as HTMLInputElement;
+const backupStatus            = $("backup-status") as HTMLParagraphElement;
+
+// Other profiles (§06)
+const otherProfilesSection    = $("other-profiles-section") as HTMLElement;
+const otherProfilesToggle     = $("other-profiles-toggle") as HTMLButtonElement;
 const otherProfilesToggleLabel = $("other-profiles-toggle-label") as HTMLSpanElement;
+const installList             = $("profile-install-list") as HTMLUListElement;
+const installAllBtn           = $("install-all-btn") as HTMLButtonElement;
+const installStatus           = $("install-status") as HTMLParagraphElement;
 const otherProfilesDismissLink = $("other-profiles-dismiss-link") as HTMLAnchorElement;
-const installList = $("profile-install-list") as HTMLUListElement;
-const installAllBtn = $("install-all-btn") as HTMLButtonElement;
-const installStatus = $("install-status");
 
-const pinningSectionBody = $("pinning-section-body") as HTMLDivElement;
-const pinningNeedsUpdate = $("pinning-needs-update") as HTMLDivElement;
-const pinningToggle = $("url-pinning-toggle") as HTMLInputElement;
-const pinningDisclosure = $("pinning-disclosure") as HTMLDivElement;
-const pinningBody = $("pinning-body") as HTMLDivElement;
-const rulesTable = $("rules-table") as HTMLTableElement;
-const rulesTbody = $("rules-tbody") as HTMLTableSectionElement;
-const rulesEmpty = $("rules-empty") as HTMLParagraphElement;
-const addRuleForm = $("add-rule-form") as HTMLFormElement;
-const addRulePattern = $("add-rule-pattern") as HTMLInputElement;
-const addRuleProfile = $("add-rule-profile") as HTMLSelectElement;
-const addRuleBtn = $("add-rule-btn") as HTMLButtonElement;
-const addRuleError = $("add-rule-error") as HTMLParagraphElement;
+// Toast
+const saveStatusEl            = $("save-status") as HTMLDivElement;
 
-const exportBtn = $("export-btn") as HTMLButtonElement;
-const importBtn = $("import-btn") as HTMLButtonElement;
-const importFile = $("import-file") as HTMLInputElement;
-const backupStatus = $("backup-status") as HTMLParagraphElement;
+// ── State ─────────────────────────────────────────────────────────────────────
 
 let multiEntries: RowEntry[] = [];
 let pinnedRulesState: PinnedRule[] = [];
 let allProfiles: ProfileInfo[] = [];
-
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+
+const PINNING_DISCLOSURE_SEEN_KEY = "urlPinningDisclosureSeen";
+
+// ── Saved toast ───────────────────────────────────────────────────────────────
 
 function showSaved(): void {
   if (saveTimeout) clearTimeout(saveTimeout);
   saveStatusEl.classList.remove("hidden");
   saveTimeout = setTimeout(() => saveStatusEl.classList.add("hidden"), 1500);
 }
+
+// ── Config save ───────────────────────────────────────────────────────────────
 
 async function saveConfig(updates: {
   defaultProfile?: string | null;
@@ -83,66 +100,36 @@ async function saveConfig(updates: {
   }
 }
 
-function createCopyButton(label: string, command: string): HTMLButtonElement {
-  const btn = document.createElement("button");
-  btn.className = "helper-action-btn";
-  btn.textContent = label;
-  btn.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(command);
-      btn.textContent = "Copied!";
-      setTimeout(() => {
-        btn.textContent = label;
-      }, 1500);
-    } catch {
-      // clipboard not available
-    }
+// ── Custom toggle helpers ─────────────────────────────────────────────────────
+
+function setToggleVisual(track: HTMLSpanElement, on: boolean): void {
+  track.classList.toggle("is-on", on);
+}
+
+function bindToggleRow(
+  track: HTMLSpanElement,
+  checkbox: HTMLInputElement,
+  onChange: (checked: boolean) => void
+): void {
+  // Click anywhere on the toggle-row row activates the toggle.
+  // The hidden checkbox handles keyboard Enter/Space via native behaviour.
+  const row = track.closest(".toggle-row");
+  if (row) {
+    row.addEventListener("click", (e) => {
+      // Avoid double-firing when the real checkbox is clicked
+      if ((e.target as HTMLElement).tagName === "INPUT") return;
+      checkbox.checked = !checkbox.checked;
+      setToggleVisual(track, checkbox.checked);
+      onChange(checkbox.checked);
+    });
+  }
+  checkbox.addEventListener("change", () => {
+    setToggleVisual(track, checkbox.checked);
+    onChange(checkbox.checked);
   });
-  return btn;
 }
 
-type NmhState = "connected-current" | "connected-outdated" | "disconnected";
-
-function createDownloadLink(): HTMLAnchorElement {
-  const a = document.createElement("a");
-  a.href = NMH_RELEASE_PAGE_URL;
-  a.target = "_blank";
-  a.rel = "noopener noreferrer";
-  a.textContent = "Or download manually →";
-  a.className = "helper-download-link";
-  return a;
-}
-
-function renderNmhAction(state: NmhState): void {
-  nmhAction.replaceChildren();
-
-  if (state === "connected-current") {
-    const btn = createCopyButton("Copy uninstall", UNINSTALL_COMMAND);
-    const hint = document.createElement("p");
-    hint.textContent = "Paste in Terminal to uninstall the helper app.";
-    nmhAction.appendChild(btn);
-    nmhAction.appendChild(hint);
-    return;
-  }
-
-  if (state === "connected-outdated") {
-    const btn = createCopyButton("Copy update", INSTALL_COMMAND);
-    const hint = document.createElement("p");
-    hint.textContent = "An update is available. Paste in Terminal, then restart Chrome.";
-    nmhAction.appendChild(btn);
-    nmhAction.appendChild(hint);
-    nmhAction.appendChild(createDownloadLink());
-    return;
-  }
-
-  // disconnected
-  const btn = createCopyButton("Copy install", INSTALL_COMMAND);
-  const hint = document.createElement("p");
-  hint.textContent = "Paste in Terminal, then restart Chrome.";
-  nmhAction.appendChild(btn);
-  nmhAction.appendChild(hint);
-  nmhAction.appendChild(createDownloadLink());
-}
+// ── Profile chip helpers ──────────────────────────────────────────────────────
 
 function profileLookupByDirectory(directory: string): { label: string; available: boolean; index: number } {
   const idx = allProfiles.findIndex((p) => p.directory === directory);
@@ -150,9 +137,6 @@ function profileLookupByDirectory(directory: string): { label: string; available
   return { label: allProfiles[idx].name, available: true, index: idx };
 }
 
-// Resolve a rule to a profile for display, preferring the account email (the
-// portable identity) over the stored directory. Rules created before email
-// capture, or whose account is signed out, fall back to directory matching.
 function profileLookupForRule(rule: PinnedRule): { label: string; available: boolean; index: number } {
   if (rule.targetProfileEmail) {
     const idx = allProfiles.findIndex((p) => p.email === rule.targetProfileEmail);
@@ -161,66 +145,69 @@ function profileLookupForRule(rule: PinnedRule): { label: string; available: boo
   return profileLookupByDirectory(rule.targetProfileDirectory);
 }
 
-function renderRulesTable(): void {
-  rulesTbody.replaceChildren();
+// ── Pins table ────────────────────────────────────────────────────────────────
+
+function renderPinsTable(): void {
+  pinsTbody.replaceChildren();
   const sorted = [...pinnedRulesState].sort((a, b) => a.createdAt - b.createdAt);
 
   if (sorted.length === 0) {
-    rulesTable.classList.add("hidden");
-    rulesEmpty.classList.remove("hidden");
+    pinsTableWrap.classList.add("hidden");
+    pinsEmpty.classList.remove("hidden");
     return;
   }
 
-  rulesTable.classList.remove("hidden");
-  rulesEmpty.classList.add("hidden");
+  pinsTableWrap.classList.remove("hidden");
+  pinsEmpty.classList.add("hidden");
 
   for (const rule of sorted) {
-    const tr = document.createElement("tr");
+    const row = document.createElement("div");
+    row.className = "pins-row";
 
-    const tdPattern = document.createElement("td");
-    tdPattern.textContent = rule.pattern;
-    tdPattern.className = "rules__pattern";
-    tr.appendChild(tdPattern);
+    // Hostname column
+    const hostCol = document.createElement("span");
+    hostCol.className = "pins-row__hostname";
+    hostCol.textContent = rule.pattern;
+    row.appendChild(hostCol);
 
-    const tdTarget = document.createElement("td");
+    // Profile column
+    const profileCol = document.createElement("span");
+    profileCol.className = "pins-row__profile";
+
     const lookup = profileLookupForRule(rule);
-    const targetWrap = document.createElement("span");
-    targetWrap.className = "rules__target";
-
     if (lookup.available) {
       const chip = document.createElement("span");
-      chip.classList.add("rules__target-chip");
+      chip.className = "pins-row__chip";
       applyChip(chip, allProfiles[lookup.index], lookup.index);
-      targetWrap.appendChild(chip);
+      profileCol.appendChild(chip);
 
       const name = document.createElement("span");
+      name.className = "pins-row__profile-name";
       name.textContent = lookup.label;
-      targetWrap.appendChild(name);
+      profileCol.appendChild(name);
     } else {
-      targetWrap.classList.add("rules__target-unavailable");
-      targetWrap.textContent = `${lookup.label} (unavailable)`;
+      const name = document.createElement("span");
+      name.className = "pins-row__profile-name pins-row__profile-name--unavailable";
+      name.textContent = `${lookup.label} (unavailable)`;
+      profileCol.appendChild(name);
     }
+    row.appendChild(profileCol);
 
-    tdTarget.appendChild(targetWrap);
-    tr.appendChild(tdTarget);
-
-    const tdActions = document.createElement("td");
-    tdActions.className = "rules__actions-col";
+    // Remove button
     const removeBtn = document.createElement("button");
     removeBtn.type = "button";
-    removeBtn.className = "rule-remove-btn";
-    removeBtn.textContent = "remove";
-    removeBtn.setAttribute("aria-label", `Remove rule for ${rule.pattern}`);
+    removeBtn.className = "pins-row__remove";
+    removeBtn.setAttribute("aria-label", `Remove pin for ${rule.pattern}`);
+    removeBtn.title = `Remove pin for ${rule.pattern}`;
+    removeBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>`;
     removeBtn.addEventListener("click", () => void removeRule(rule.id));
-    tdActions.appendChild(removeBtn);
-    tr.appendChild(tdActions);
+    row.appendChild(removeBtn);
 
-    rulesTbody.appendChild(tr);
+    pinsTbody.appendChild(row);
   }
 }
 
 function refreshAddRuleProfileOptions(): void {
-  // Keep the placeholder, replace the rest.
   while (addRuleProfile.options.length > 1) addRuleProfile.remove(1);
   for (const profile of allProfiles) {
     const option = document.createElement("option");
@@ -230,19 +217,19 @@ function refreshAddRuleProfileOptions(): void {
   }
 }
 
+// ── Pinning gate helpers ──────────────────────────────────────────────────────
+
 function applyNmhVersionGate(supported: boolean): void {
   pinningSectionBody.classList.toggle("hidden", !supported);
   pinningNeedsUpdate.classList.toggle("hidden", supported);
 }
 
 function applyPinningEnabledState(enabled: boolean): void {
-  pinningBody.classList.toggle("disabled", !enabled);
-  // When disabled, controls remain visible (so users can still manage rules
-  // without flipping the toggle just to look) but interactions are inert.
+  pinningBody.classList.toggle("is-disabled", !enabled);
   addRulePattern.disabled = !enabled;
   addRuleProfile.disabled = !enabled;
   addRuleBtn.disabled = !enabled;
-  for (const btn of rulesTbody.querySelectorAll<HTMLButtonElement>(".rule-remove-btn")) {
+  for (const btn of pinsTbody.querySelectorAll<HTMLButtonElement>(".pins-row__remove")) {
     btn.disabled = !enabled;
   }
 }
@@ -254,10 +241,12 @@ async function showFirstTimeDisclosureIfNeeded(): Promise<void> {
   await chrome.storage.local.set({ [PINNING_DISCLOSURE_SEEN_KEY]: true });
 }
 
+// ── Rule CRUD ─────────────────────────────────────────────────────────────────
+
 async function removeRule(id: string): Promise<void> {
   pinnedRulesState = pinnedRulesState.filter((r) => r.id !== id);
-  renderRulesTable();
-  applyPinningEnabledState(pinningToggle.checked);
+  renderPinsTable();
+  applyPinningEnabledState(autoRedirectCheckbox.checked);
   await saveConfig({ pinnedRules: pinnedRulesState });
 }
 
@@ -291,7 +280,7 @@ async function handleAddRule(event: Event): Promise<void> {
     return;
   }
   if (pinnedRulesState.some((r) => r.pattern === pattern)) {
-    showAddRuleError(`A rule for ${pattern} already exists. Remove it first.`);
+    showAddRuleError(`A pin for ${pattern} already exists. Remove it first.`);
     return;
   }
 
@@ -309,133 +298,17 @@ async function handleAddRule(event: Event): Promise<void> {
 
   addRulePattern.value = "";
   addRuleProfile.value = "";
-  renderRulesTable();
-  applyPinningEnabledState(pinningToggle.checked);
+  renderPinsTable();
+  applyPinningEnabledState(autoRedirectCheckbox.checked);
   await saveConfig({ pinnedRules: pinnedRulesState });
 }
 
-async function handlePinningToggleChange(): Promise<void> {
-  const enabled = pinningToggle.checked;
-  applyPinningEnabledState(enabled);
-  if (enabled) {
-    await showFirstTimeDisclosureIfNeeded();
-  }
-  await saveConfig({ urlPinningEnabled: enabled });
-}
+// ── Other profiles section ────────────────────────────────────────────────────
 
-async function init(): Promise<void> {
-  // Load profiles for the default profile dropdown
-  try {
-    const response = await chrome.runtime.sendMessage({
-      type: "get_profiles",
-      forceRefresh: true,
-    });
-
-    if (response?.success && response.profiles) {
-      allProfiles = response.profiles;
-      for (const profile of allProfiles) {
-        const option = document.createElement("option");
-        option.value = profile.directory;
-        option.textContent = profile.email
-          ? `${profile.name} — ${profile.email}`
-          : profile.name;
-        defaultProfileSelect.appendChild(option);
-      }
-      refreshAddRuleProfileOptions();
-    }
-  } catch (err) {
-    console.warn("Profilissimo: failed to load profiles", err);
-  }
-
-  // Load shared config from NMH
-  let otherResidencesDismissed = false;
-  try {
-    const configResponse = await chrome.runtime.sendMessage({ type: "get_config" });
-    if (configResponse?.success && configResponse.config) {
-      const cfg = configResponse.config;
-      const emailMatch = cfg.defaultProfileEmail
-        ? allProfiles.find((p) => p.email === cfg.defaultProfileEmail)
-        : undefined;
-      if (emailMatch) {
-        // Email is the source of truth — point the select at wherever that
-        // account currently lives, and re-heal the stored directory if it
-        // drifted (e.g. after a machine migration).
-        defaultProfileSelect.value = emailMatch.directory;
-        if (cfg.defaultProfile !== emailMatch.directory) {
-          await chrome.runtime.sendMessage({
-            type: "set_config",
-            defaultProfile: emailMatch.directory,
-            defaultProfileEmail: emailMatch.email,
-          });
-        }
-      } else if (cfg.defaultProfile) {
-        defaultProfileSelect.value = cfg.defaultProfile;
-        // Clear if profile no longer exists in the dropdown
-        if (defaultProfileSelect.value !== cfg.defaultProfile) {
-          await chrome.runtime.sendMessage({ type: "set_config", defaultProfile: null });
-        }
-      }
-      closeSourceTab.checked = configResponse.config.closeSourceTab ?? false;
-      pinningToggle.checked = configResponse.config.urlPinningEnabled === true;
-      pinnedRulesState = Array.isArray(configResponse.config.pinnedRules)
-        ? configResponse.config.pinnedRules
-        : [];
-      otherResidencesDismissed = configResponse.config.otherResidencesDismissed === true;
-    }
-  } catch {
-    // NMH config not available
-  }
-
-  renderRulesTable();
-  applyPinningEnabledState(pinningToggle.checked);
-
-  // Load actual keyboard shortcut from Chrome
-  try {
-    const commands = await chrome.commands.getAll();
-    const transferCmd = commands.find((c) => c.name === "transfer-to-default");
-    if (transferCmd?.shortcut) {
-      shortcutLabel.textContent = transferCmd.shortcut;
-    } else {
-      shortcutLabel.textContent = "Not set";
-    }
-  } catch {
-    // Fallback already in HTML
-  }
-
-  // Check NMH connectivity
-  let connected = false;
-  let version: string | null = null;
-  try {
-    const response = await chrome.runtime.sendMessage({ type: "health_check" });
-    connected = !!response?.connected;
-    version = response?.version ?? null;
-  } catch {
-    // NMH not reachable
-  }
-  const upToDate = connected && isAtLeast(version ?? undefined, REQUIRED_NMH_VERSION);
-  const nmhState: NmhState = !connected
-    ? "disconnected"
-    : upToDate
-    ? "connected-current"
-    : "connected-outdated";
-
-  nmhIndicator.className = `nmh-card__indicator ${connected ? (upToDate ? "connected" : "outdated") : "disconnected"}`;
-  nmhText.textContent = !connected
-    ? "Not connected"
-    : upToDate
-    ? "Connected"
-    : "Connected — update available";
-  nmhVersion.textContent = version ? `— v${version}` : "";
-  renderNmhAction(nmhState);
-
-  // Gate the Pinned URLs interactive UI on NMH version. On 1.0.0 NMH the
-  // toggle would silently fail to persist (old NMH ignores unknown config
-  // fields), so hide the controls and show a "needs update" notice instead.
-  applyNmhVersionGate(connected && upToDate);
-
-  if (connected) {
-    await initOtherProfilesSection(otherResidencesDismissed);
-  }
+function setOtherProfilesCollapsed(collapsed: boolean): void {
+  otherProfilesSection.classList.toggle("is-collapsed", collapsed);
+  otherProfilesToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+  otherProfilesToggleLabel.textContent = collapsed ? "Show" : "Hide";
 }
 
 async function initOtherProfilesSection(dismissed: boolean): Promise<void> {
@@ -457,64 +330,7 @@ async function initOtherProfilesSection(dismissed: boolean): Promise<void> {
   otherProfilesSection.classList.remove("hidden");
 }
 
-function setOtherProfilesCollapsed(collapsed: boolean): void {
-  otherProfilesSection.classList.toggle("section--collapsed", collapsed);
-  otherProfilesToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
-  otherProfilesToggleLabel.textContent = collapsed ? "Show" : "Hide";
-}
-
-installAllBtn.addEventListener("click", async () => {
-  if (multiEntries.length === 0) return;
-
-  installAllBtn.disabled = true;
-  installAllBtn.textContent = "Opening…";
-  installStatus.classList.add("hidden");
-  installStatus.className = "install-status";
-
-  const result = await openInAllProfiles(multiEntries);
-  const summary = summarizeCascade(result);
-
-  installStatus.classList.remove("hidden");
-  installStatus.classList.add(summary.tone);
-  installStatus.textContent = summary.text;
-  installAllBtn.textContent = summary.buttonLabel;
-  installAllBtn.disabled = false;
-});
-
-// Open chrome://extensions/shortcuts
-shortcutLink.addEventListener("click", (e) => {
-  e.preventDefault();
-  chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
-});
-
-// Other residences accordion + dismissal. The collapse state isn't persisted —
-// it only persists once the user explicitly says "I've done that already" via
-// the dismiss link, which writes otherResidencesDismissed to NMH config so the
-// section starts collapsed in every profile thereafter.
-otherProfilesToggle.addEventListener("click", () => {
-  const collapsed = otherProfilesSection.classList.contains("section--collapsed");
-  setOtherProfilesCollapsed(!collapsed);
-});
-
-otherProfilesDismissLink.addEventListener("click", (e) => {
-  e.preventDefault();
-  setOtherProfilesCollapsed(true);
-  void saveConfig({ otherResidencesDismissed: true });
-});
-
-// Auto-save on change
-defaultProfileSelect.addEventListener("change", () => {
-  const dir = defaultProfileSelect.value || null;
-  const email = dir ? (allProfiles.find((p) => p.directory === dir)?.email ?? null) : null;
-  void saveConfig({ defaultProfile: dir, defaultProfileEmail: email });
-});
-closeSourceTab.addEventListener("change", () => void saveConfig({ closeSourceTab: closeSourceTab.checked }));
-
-pinningToggle.addEventListener("change", () => void handlePinningToggleChange());
-addRuleForm.addEventListener("submit", (event) => void handleAddRule(event));
-addRulePattern.addEventListener("input", clearAddRuleError);
-
-// --- Backup & restore ---
+// ── Backup & restore ──────────────────────────────────────────────────────────
 
 const BACKUP_TYPE = "profilissimo-settings";
 const PROFILE_DIR_RE = /^[a-zA-Z0-9 _-]+$/;
@@ -539,7 +355,7 @@ async function exportSettings(): Promise<void> {
     const resp = await chrome.runtime.sendMessage({ type: "get_config" });
     if (resp?.success && resp.config) config = resp.config as AppConfig;
   } catch {
-    // fall through to the error message below
+    // fall through
   }
   if (!config) {
     showBackupStatus("Couldn't read your settings — is the helper app connected?", "error");
@@ -572,12 +388,9 @@ async function exportSettings(): Promise<void> {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 
   const n = config.pinnedRules.length;
-  showBackupStatus(`Exported your settings and ${n} binding${n === 1 ? "" : "s"}.`, "success");
+  showBackupStatus(`Exported your settings and ${n} pin${n === 1 ? "" : "s"}.`, "success");
 }
 
-// Re-point an imported target's directory to wherever its account currently
-// lives on THIS machine. The email is the portable key; the stored directory
-// is only a fallback that's likely stale on a different Mac.
 function rehealDirectory(email: string | undefined, fallback: string): string {
   if (email) {
     const match = allProfiles.find((p) => p.email === email);
@@ -586,9 +399,6 @@ function rehealDirectory(email: string | undefined, fallback: string): string {
   return fallback;
 }
 
-// Validate an imported rule against the same constraints the helper app
-// enforces, so a single malformed entry can't fail the whole import. Returns
-// null (and gets counted as skipped) when the rule can't be salvaged.
 function importableRule(value: unknown): PinnedRule | null {
   if (typeof value !== "object" || value === null) return null;
   const r = value as Record<string, unknown>;
@@ -596,7 +406,10 @@ function importableRule(value: unknown): PinnedRule | null {
   if (typeof r.pattern !== "string" || !isValidPattern(r.pattern)) return null;
   if (typeof r.targetProfileDirectory !== "string" || !PROFILE_DIR_RE.test(r.targetProfileDirectory)) return null;
   if (typeof r.createdAt !== "number" || !Number.isFinite(r.createdAt)) return null;
-  const email = typeof r.targetProfileEmail === "string" && EMAIL_RE.test(r.targetProfileEmail) ? r.targetProfileEmail : undefined;
+  const email =
+    typeof r.targetProfileEmail === "string" && EMAIL_RE.test(r.targetProfileEmail)
+      ? r.targetProfileEmail
+      : undefined;
   const rule: PinnedRule = {
     id: r.id,
     pattern: r.pattern,
@@ -625,7 +438,12 @@ async function importSettings(file: File): Promise<void> {
   }
 
   const wrapper = parsed as Partial<BackupFile> | null;
-  if (!wrapper || wrapper.type !== BACKUP_TYPE || typeof wrapper.settings !== "object" || wrapper.settings === null) {
+  if (
+    !wrapper ||
+    wrapper.type !== BACKUP_TYPE ||
+    typeof wrapper.settings !== "object" ||
+    wrapper.settings === null
+  ) {
     showBackupStatus("That doesn't look like a Profilissimo settings file.", "error");
     return;
   }
@@ -642,9 +460,13 @@ async function importSettings(file: File): Promise<void> {
   }
 
   const defaultProfileEmail =
-    typeof s.defaultProfileEmail === "string" && EMAIL_RE.test(s.defaultProfileEmail) ? s.defaultProfileEmail : null;
+    typeof s.defaultProfileEmail === "string" && EMAIL_RE.test(s.defaultProfileEmail)
+      ? s.defaultProfileEmail
+      : null;
   let defaultProfile =
-    typeof s.defaultProfile === "string" && PROFILE_DIR_RE.test(s.defaultProfile) ? s.defaultProfile : null;
+    typeof s.defaultProfile === "string" && PROFILE_DIR_RE.test(s.defaultProfile)
+      ? s.defaultProfile
+      : null;
   if (defaultProfileEmail) {
     const match = allProfiles.find((p) => p.email === defaultProfileEmail);
     if (match) defaultProfile = match.directory;
@@ -655,7 +477,11 @@ async function importSettings(file: File): Promise<void> {
   const dismissed = typeof s.otherResidencesDismissed === "boolean" ? s.otherResidencesDismissed : undefined;
 
   const n = rules.length;
-  if (!window.confirm(`Import will replace your current settings with ${n} binding${n === 1 ? "" : "s"} from this file. Continue?`)) {
+  if (
+    !window.confirm(
+      `Import will replace your current settings with ${n} pin${n === 1 ? "" : "s"} from this file. Continue?`
+    )
+  ) {
     showBackupStatus("Import cancelled.", "info");
     return;
   }
@@ -684,23 +510,235 @@ async function importSettings(file: File): Promise<void> {
     return;
   }
 
-  // Reflect the imported state in the UI without a full page reload.
+  // Reflect imported state in UI without a full reload
   pinnedRulesState = rules;
-  if (closeSrc !== undefined) closeSourceTab.checked = closeSrc;
-  if (pinning !== undefined) pinningToggle.checked = pinning;
+  if (closeSrc !== undefined) {
+    closeSourceCheckbox.checked = closeSrc;
+    setToggleVisual(closeSourceTrack, closeSrc);
+  }
+  if (pinning !== undefined) {
+    autoRedirectCheckbox.checked = pinning;
+    setToggleVisual(autoRedirectTrack, pinning);
+  }
   defaultProfileSelect.value = defaultProfile ?? "";
-  renderRulesTable();
-  applyPinningEnabledState(pinningToggle.checked);
+  renderPinsTable();
+  applyPinningEnabledState(autoRedirectCheckbox.checked);
 
-  const tail = dropped > 0 ? ` (${dropped} invalid binding${dropped === 1 ? "" : "s"} skipped)` : "";
-  showBackupStatus(`Imported ${n} binding${n === 1 ? "" : "s"}${tail}.`, "success");
+  const tail =
+    dropped > 0 ? ` (${dropped} invalid pin${dropped === 1 ? "" : "s"} skipped)` : "";
+  showBackupStatus(`Imported ${n} pin${n === 1 ? "" : "s"}${tail}.`, "success");
 }
 
+// ── Helper card mount ─────────────────────────────────────────────────────────
+
+function mountHelperCard(
+  state: HelperState,
+  version: string | null,
+  onAction: () => void
+): void {
+  helperStatusMount.replaceChildren();
+  const latest = REQUIRED_NMH_VERSION;
+  const card = renderHelperStatus({
+    state,
+    variant: "card",
+    ...(version ? { version } : {}),
+    ...(state === "outdated" ? { latest } : {}),
+    onAction,
+  });
+  helperStatusMount.appendChild(card);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+
+async function init(): Promise<void> {
+  // Load profiles
+  try {
+    const response = await chrome.runtime.sendMessage({
+      type: "get_profiles",
+      forceRefresh: true,
+    });
+    if (response?.success && response.profiles) {
+      allProfiles = response.profiles;
+      for (const profile of allProfiles) {
+        const option = document.createElement("option");
+        option.value = profile.directory;
+        option.textContent = profile.email
+          ? `${profile.name} — ${profile.email}`
+          : profile.name;
+        defaultProfileSelect.appendChild(option);
+      }
+      refreshAddRuleProfileOptions();
+    }
+  } catch (err) {
+    console.warn("Profilissimo: failed to load profiles", err);
+  }
+
+  // Load config
+  let otherResidencesDismissed = false;
+  try {
+    const configResponse = await chrome.runtime.sendMessage({ type: "get_config" });
+    if (configResponse?.success && configResponse.config) {
+      const cfg = configResponse.config;
+      const emailMatch = cfg.defaultProfileEmail
+        ? allProfiles.find((p) => p.email === cfg.defaultProfileEmail)
+        : undefined;
+      if (emailMatch) {
+        defaultProfileSelect.value = emailMatch.directory;
+        if (cfg.defaultProfile !== emailMatch.directory) {
+          await chrome.runtime.sendMessage({
+            type: "set_config",
+            defaultProfile: emailMatch.directory,
+            defaultProfileEmail: emailMatch.email,
+          });
+        }
+      } else if (cfg.defaultProfile) {
+        defaultProfileSelect.value = cfg.defaultProfile;
+        if (defaultProfileSelect.value !== cfg.defaultProfile) {
+          await chrome.runtime.sendMessage({ type: "set_config", defaultProfile: null });
+        }
+      }
+
+      const closeOn = configResponse.config.closeSourceTab ?? false;
+      closeSourceCheckbox.checked = closeOn;
+      setToggleVisual(closeSourceTrack, closeOn);
+
+      const pinningOn = configResponse.config.urlPinningEnabled === true;
+      autoRedirectCheckbox.checked = pinningOn;
+      setToggleVisual(autoRedirectTrack, pinningOn);
+
+      pinnedRulesState = Array.isArray(configResponse.config.pinnedRules)
+        ? configResponse.config.pinnedRules
+        : [];
+      otherResidencesDismissed = configResponse.config.otherResidencesDismissed === true;
+    }
+  } catch {
+    // NMH config not available
+  }
+
+  renderPinsTable();
+  applyPinningEnabledState(autoRedirectCheckbox.checked);
+
+  // Load keyboard shortcut
+  try {
+    const commands = await chrome.commands.getAll();
+    const transferCmd = commands.find((c) => c.name === "transfer-to-default");
+    if (transferCmd?.shortcut) {
+      shortcutLabel.textContent = transferCmd.shortcut;
+    } else {
+      shortcutLabel.textContent = "Not set";
+    }
+  } catch {
+    // Fallback already in HTML
+  }
+
+  // Check NMH connectivity
+  let connected = false;
+  let version: string | null = null;
+  try {
+    const response = await chrome.runtime.sendMessage({ type: "health_check" });
+    connected = !!response?.connected;
+    version = response?.version ?? null;
+  } catch {
+    // NMH not reachable
+  }
+  const upToDate = connected && isAtLeast(version ?? undefined, REQUIRED_NMH_VERSION);
+
+  // Map to HelperState for the shared card renderer
+  const helperState: HelperState = !connected
+    ? "not-installed"
+    : upToDate
+    ? "connected"
+    : "outdated";
+
+  // Action opens the install command in a copyable alert — re-uses existing
+  // intent: user sees/copies INSTALL_COMMAND to update or install.
+  const onHelperAction = (): void => {
+    window.prompt("Paste this in Terminal, then restart Chrome:", INSTALL_COMMAND);
+  };
+
+  // Also surface NMH release page for manual download
+  if (helperState !== "connected") {
+    // The action button + a secondary download link is sufficient;
+    // the release page URL is surfaced via NMH_RELEASE_PAGE_URL if needed.
+    void NMH_RELEASE_PAGE_URL; // keep the import live
+  }
+
+  mountHelperCard(helperState, version, onHelperAction);
+
+  // Gate pinned-sites UI on NMH version
+  applyNmhVersionGate(connected && upToDate);
+
+  if (connected) {
+    await initOtherProfilesSection(otherResidencesDismissed);
+  }
+}
+
+// ── Event wiring ──────────────────────────────────────────────────────────────
+
+// Custom toggles
+bindToggleRow(closeSourceTrack, closeSourceCheckbox, (checked) => {
+  void saveConfig({ closeSourceTab: checked });
+});
+
+bindToggleRow(autoRedirectTrack, autoRedirectCheckbox, async (checked) => {
+  applyPinningEnabledState(checked);
+  if (checked) await showFirstTimeDisclosureIfNeeded();
+  await saveConfig({ urlPinningEnabled: checked });
+});
+
+// Default-profile select
+defaultProfileSelect.addEventListener("change", () => {
+  const dir = defaultProfileSelect.value || null;
+  const email = dir ? (allProfiles.find((p) => p.directory === dir)?.email ?? null) : null;
+  void saveConfig({ defaultProfile: dir, defaultProfileEmail: email });
+});
+
+// Shortcut link
+shortcutLink.addEventListener("click", (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: "chrome://extensions/shortcuts" });
+});
+
+// Add-pin form
+addRuleForm.addEventListener("submit", (event) => void handleAddRule(event));
+addRulePattern.addEventListener("input", clearAddRuleError);
+
+// Install-all button (§06)
+installAllBtn.addEventListener("click", async () => {
+  if (multiEntries.length === 0) return;
+  installAllBtn.disabled = true;
+  installAllBtn.textContent = "Opening…";
+  installStatus.classList.add("hidden");
+  installStatus.className = "install-status";
+
+  const result = await openInAllProfiles(multiEntries);
+  const summary = summarizeCascade(result);
+
+  installStatus.classList.remove("hidden");
+  installStatus.classList.add(summary.tone);
+  installStatus.textContent = summary.text;
+  installAllBtn.textContent = summary.buttonLabel;
+  installAllBtn.disabled = false;
+});
+
+// Other profiles toggle + dismiss
+otherProfilesToggle.addEventListener("click", () => {
+  const collapsed = otherProfilesSection.classList.contains("is-collapsed");
+  setOtherProfilesCollapsed(!collapsed);
+});
+
+otherProfilesDismissLink.addEventListener("click", (e) => {
+  e.preventDefault();
+  setOtherProfilesCollapsed(true);
+  void saveConfig({ otherResidencesDismissed: true });
+});
+
+// Backup & restore
 exportBtn.addEventListener("click", () => void exportSettings());
 importBtn.addEventListener("click", () => importFile.click());
 importFile.addEventListener("change", () => {
   const file = importFile.files?.[0];
-  importFile.value = ""; // reset so the same file can be re-imported
+  importFile.value = "";
   if (file) void importSettings(file);
 });
 
