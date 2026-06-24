@@ -72,10 +72,19 @@ const PINNING_DISCLOSURE_SEEN_KEY = "urlPinningDisclosureSeen";
 
 // ── Saved toast ───────────────────────────────────────────────────────────────
 
-function showSaved(): void {
+function showToast(message?: string): void {
   if (saveTimeout) clearTimeout(saveTimeout);
+  const original = saveStatusEl.textContent ?? "Saved.";
+  if (message) saveStatusEl.textContent = message;
   saveStatusEl.classList.remove("hidden");
-  saveTimeout = setTimeout(() => saveStatusEl.classList.add("hidden"), 1500);
+  saveTimeout = setTimeout(() => {
+    saveStatusEl.classList.add("hidden");
+    if (message) saveStatusEl.textContent = original;
+  }, 1500);
+}
+
+function showSaved(): void {
+  showToast();
 }
 
 // ── Config save ───────────────────────────────────────────────────────────────
@@ -650,20 +659,33 @@ async function init(): Promise<void> {
     ? "connected"
     : "outdated";
 
-  // Action opens the install command in a copyable alert — re-uses existing
-  // intent: user sees/copies INSTALL_COMMAND to update or install.
-  const onHelperAction = (): void => {
-    window.prompt("Paste this in Terminal, then restart Chrome:", INSTALL_COMMAND);
+  // Action copies INSTALL_COMMAND to clipboard; falls back to window.prompt.
+  const onHelperAction = async (): Promise<void> => {
+    const label = helperState === "outdated" ? "Update command copied" : "Install command copied";
+    try {
+      await navigator.clipboard.writeText(INSTALL_COMMAND);
+      showToast(label);
+    } catch {
+      window.prompt("Paste this in Terminal, then restart Chrome:", INSTALL_COMMAND);
+    }
   };
 
-  // Also surface NMH release page for manual download
-  if (helperState !== "connected") {
-    // The action button + a secondary download link is sufficient;
-    // the release page URL is surfaced via NMH_RELEASE_PAGE_URL if needed.
-    void NMH_RELEASE_PAGE_URL; // keep the import live
-  }
+  mountHelperCard(helperState, version, () => { void onHelperAction(); });
 
-  mountHelperCard(helperState, version, onHelperAction);
+  // Render a "Download manually →" link below the card when not connected.
+  const existingDownloadLink = helperStatusMount.nextElementSibling;
+  if (existingDownloadLink?.classList.contains("helper-download-link")) {
+    existingDownloadLink.remove();
+  }
+  if (helperState !== "connected") {
+    const downloadLink = document.createElement("a");
+    downloadLink.href = NMH_RELEASE_PAGE_URL;
+    downloadLink.target = "_blank";
+    downloadLink.rel = "noopener noreferrer";
+    downloadLink.textContent = "Download manually →";
+    downloadLink.className = "helper-download-link";
+    helperStatusMount.insertAdjacentElement("afterend", downloadLink);
+  }
 
   // Gate pinned-sites UI on NMH version
   applyNmhVersionGate(connected && upToDate);

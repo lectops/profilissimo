@@ -84,3 +84,24 @@ These old elements/classes were removed and their handlers replaced:
 4. **Toggle a11y**: The hidden `<input type="checkbox">` is positioned absolutely over the track for keyboard/screen-reader operation. Click on the `.toggle-row` flips it visually + functionally; the real checkbox change event also fires `setToggleVisual`. Both code paths call the same save handler.
 
 5. **`#sec-other` TOC anchor**: The section element has `id="other-profiles-section"` (used by JS). The TOC link now points to `#other-profiles-section` rather than a separate `#sec-other`. Both the anchor scroll and the JS `$()` lookup use the same id.
+
+---
+
+## Review Fixes Applied (post-review)
+
+### Fix 1: Restore one-click helper copy + download link
+
+Replaced the `window.prompt()` action with `navigator.clipboard.writeText(INSTALL_COMMAND)`. Added a `showToast(message?)` helper that wraps `showSaved()` and accepts an optional label override — so the existing "Saved." pill now also shows "Install command copied" / "Update command copied" on clipboard success. On clipboard failure, falls back to `window.prompt()`. After `mountHelperCard()`, when state is not "connected", an `<a class="helper-download-link">` pointing to `NMH_RELEASE_PAGE_URL` is inserted immediately after `#helper-status-mount` in the DOM. The `void NMH_RELEASE_PAGE_URL` dead-code stub was removed; the import is now genuinely live.
+
+### Fix 2: Toggle keyboard focus ring
+
+Added to `options.css` immediately after `.toggle-track.is-on .toggle-thumb`:
+
+```css
+.toggle-row:focus-within .toggle-track {
+  outline: 2px solid var(--brass-2);
+  outline-offset: 2px;
+}
+```
+
+The hidden `.toggle-input` sits inside `.toggle-row`, so `:focus-within` fires when the checkbox receives keyboard focus. The ring appears on the visible `.toggle-track` element instead of the invisible input.

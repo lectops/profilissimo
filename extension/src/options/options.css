@@ -291,6 +291,12 @@ select:focus {
   left: 19.5px;
 }
 
+/* Keyboard focus ring on the visible track */
+.toggle-row:focus-within .toggle-track {
+  outline: 2px solid var(--brass-2);
+  outline-offset: 2px;
+}
+
 /* ---------- Warn banner (helper-outdated notice in §03) ---------- */
 .warn-banner {
   display: flex;
