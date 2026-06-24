@@ -146,13 +146,13 @@ async function buildContextMenus(): Promise<void> {
     }
   }
 
-  // "Always open this site in\u2026" submenu \u2014 hidden when URL pinning is off,
+  // "Pin this site to\u2026" submenu \u2014 hidden when URL pinning is off,
   // because clicking it would have no effect (avoids the discoverable-but-
   // disabled anti-pattern).
   if (pinningEnabled && profiles.length >= 1) {
     chrome.contextMenus.create({
       id: "pin_parent",
-      title: "Always open this site in\u2026",
+      title: "Pin this site to\u2026",
       contexts: ["page"],
       // documentUrlPatterns avoids showing this on chrome:// or other internal
       // pages where there's no pinnable hostname.
@@ -347,8 +347,8 @@ function notifyPinFailure(pattern: string, reason: string): void {
     chrome.notifications.create({
       type: "basic",
       iconUrl: chrome.runtime.getURL("icons/icon-128.png"),
-      title: "Profilissimo: pin didn't fire",
-      message: `Couldn't redirect ${pattern}: ${reason}. Check Settings → Pinned URLs.`,
+      title: "A pin didn't fire",
+      message: `Couldn't open ${pattern} — ${reason}. Check Settings → Pinned sites.`,
       priority: 0,
     });
   } catch (err) {

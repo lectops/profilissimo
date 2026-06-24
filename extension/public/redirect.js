@@ -12,6 +12,14 @@
   var params = new URLSearchParams(location.search);
   var target = params.get("to");
   var msg = document.getElementById("msg");
+  var urlDisplay = document.getElementById("url-display");
+
+  // Populate the URL display if we have a target.
+  if (target && urlDisplay) {
+    // Truncate very long URLs for display.
+    var displayUrl = target.length > 60 ? target.slice(0, 57) + "…" : target;
+    urlDisplay.textContent = displayUrl;
+  }
 
   if (!target) {
     if (msg) msg.textContent = "Missing target URL.";
@@ -22,6 +30,8 @@
     if (msg) msg.textContent = "Couldn't open: " + (err && err.message ? err.message : "unknown error");
   }
 
+  // Navigate immediately — the hand-off visual is just what shows for the
+  // brief instant before navigation completes. No artificial delay.
   try {
     chrome.tabs.getCurrent(function (tab) {
       if (chrome.runtime.lastError) {
