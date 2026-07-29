@@ -67,12 +67,12 @@ This is an npm workspaces monorepo with two packages: `extension/` and `native-h
 
 Built with Vite + `@crxjs/vite-plugin`. Entry points:
 
-- **Service worker** (`src/background/service-worker.ts`): Central hub. Creates context menus, handles keyboard shortcuts, routes messages between popup/options UI and NMH. Manifest V3 terminates idle service workers after ~30s, so context menus must be rebuilt on every wake — never assume in-memory state survives across events.
-- **Popup** (`src/popup/`): Toolbar popup listing all Chrome profiles for one-click transfer.
-- **Options** (`src/options/`): Settings page (default profile, auto-close, notifications).
+- **Service worker** (`src/background/service-worker.ts`): Central hub. Creates context menus, handles keyboard shortcuts, routes messages between popup/options UI and NMH, runs the URL-pinning `webNavigation.onBeforeNavigate` listener. Manifest V3 terminates idle service workers after ~30s, so context menus must be rebuilt on every wake and listeners must be registered at top level — never assume in-memory state survives across events.
+- **Popup** (`src/popup/`): Toolbar popup listing all Chrome profiles for one-click transfer, plus a "Pin this site" picker when URL pinning is enabled.
+- **Options** (`src/options/`): Settings page (default profile, auto-close, URL pinning rules + toggle).
 - **Onboarding** (`src/onboarding/`): First-run setup guide shown on install.
 
-Key utils: `native-messaging.ts` (NMH communication with 15s timeout), `storage.ts` (Chrome storage wrapper), `url.ts` (URL validation).
+Key utils: `native-messaging.ts` (NMH communication with 15s timeout), `storage.ts` (Chrome storage wrapper), `url.ts` (URL validation), `pin-matcher.ts` (exact-hostname matcher for URL pinning), `profile-identity.ts` (resolves the current Chrome profile's directory by triangulating `chrome.identity.getProfileUserInfo()` email against `list_profiles`; cached in `chrome.storage.local` for restart resilience), `version.ts` (semver comparison).
 
 ### Native Messaging Host (`native-host/`)
 
@@ -85,7 +85,30 @@ Compiled to a standalone binary with Bun. Entry point: `src/main.ts` (stdin/stdo
 
 ### Message Types
 
-Defined in `extension/src/types/messages.ts`. The NMH request is a discriminated union on the `action` field. Both sides validate all messages at the boundary.
+Defined in `extension/src/types/messages.ts`. The NMH request is a discriminated union on the `action` field. Both sides validate all messages at the boundary. `set_config` is the most evolved action — it accepts `defaultProfile`, `closeSourceTab`, `urlPinningEnabled`, and `pinnedRules` (each individually optional). `PinnedRule` is mirrored in `extension/src/types/messages.ts` and `native-host/src/schema.ts`; the NMH validator is the authoritative gatekeeper (RFC 1035 hostnames, profile-dir pattern, 500-rule cap).
+
+### URL pinning
+
+Auto-redirects pinned hostnames to a designated profile via `webNavigation.onBeforeNavigate` (top-frame only). Three pieces have to stay aligned:
+
+1. **Exact hostname matching** (`pin-matcher.ts`). `URL.hostname === pattern`. No wildcards, no path prefixes — by design.
+2. **Loop guard** (`profile-identity.ts`). Before redirecting, the listener compares the rule's `targetProfileDirectory` against the current profile's directory. If they match, skip; if the directory is unknown (no email, NMH unreachable), skip defensively. Failing-open here would create an infinite redirect loop across two profiles.
+3. **Storage** lives in NMH config (`~/.profilissimo/config.json`), not `chrome.storage.sync`, so rules are per-machine and account-agnostic.
+
+Default off. The `webNavigation` permission triggers a permission-grant prompt on auto-update for existing users; the `notifications` permission (used to surface failed redirects) is non-warning and adds no extra prompt.
+
+### NMH version gating
+
+The wire protocol is additive-only, but newer features still need newer NMHs. The pattern:
+
+- `REQUIRED_NMH_VERSION` lives in `extension/src/utils/constants.ts` and bumps with each NMH release that adds new behavior.
+- The service worker reads NMH version from `health_check` on init and caches `nmhSupportsExtendedTransfer = isAtLeast(version, REQUIRED_NMH_VERSION)`.
+- Features that depend on the new NMH must check this flag and degrade gracefully — error messages point users at Settings; UI controls (e.g. the Pinned URLs section) hide themselves and show a "needs update" notice rather than silently fail.
+- Settings shows a yellow "Connected — update available" status with copy-update-command + manual-download links pointing at the versioned GitHub release page (URL derived from `REQUIRED_NMH_VERSION`).
+
+### chrome:// transfer bridge
+
+Chrome silently drops `chrome://` URLs (and some other internal schemes) when forwarded to a running Chrome instance via `--profile-directory=X -- chrome://settings`. The launcher CAN'T fix this from the NMH side — Chrome's behavior is a security mitigation. Workaround: when transferring a non-http(s) URL, the service worker rewrites it to `chrome-extension://<ID>/redirect.html?to=<encoded>`. That page is loaded in the target profile and uses `chrome.tabs.update()` from extension context to navigate to the original URL — which IS allowed to reach `chrome://` from an extension with the `tabs` permission. Don't remove `extension/public/redirect.html`/`redirect.js` thinking they're vestigial.
 
 ## Security Constraints
 
